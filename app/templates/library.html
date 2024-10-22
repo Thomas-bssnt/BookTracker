@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h2>Bibliothèque</h2>
+
+    <button id="addBookButton" class="icon">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <div class="table-container">
+        <table class="book-table">
+            <thead>
+            <tr>
+                <th>Titre</th>
+                <th>Auteur</th>
+                <th>Série</th>
+                <th>Année</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for book in books %}
+                <tr data-book-id="{{ book.id }}" class="book-row">
+                    <td>{{ book.title }}</td>
+                    <td>{{ book.author_first }} {{ book.author_last }}</td>
+                    <td>{{ book.series }} #{{ book.volume }}</td>
+                    <td>{% if book.year is not none %}{{ book.year }}{% else %}{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="bookModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+
+            <div id="viewMode">
+                <p><strong>Titre :</strong> <span id="viewMode-title"></span></p>
+                <p><strong>Auteur :</strong> <span id="viewMode-author_first"></span>
+                    <span id="viewMode-author_last"></span></p>
+                <p><strong>Série :</strong> <span id="viewMode-series"></span> <span id="viewMode-volume"></span></p>
+
+                <p><strong>Année :</strong> <span id="viewMode-year"></span></p>
+                <p><strong>Langue :</strong> <span id="viewMode-language"></span></p>
+                <p><strong>Genre :</strong> <span id="viewMode-genre"></span></p>
+                <p><strong>ISBN :</strong> <span id="viewMode-isbn"></span></p>
+
+                <button id="editBookButton" class="icon">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+
+                <button id="deleteBookButton" class="icon">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+
+            <div id="formMode">
+                <form id="bookForm">
+                    <input type="hidden" id="formMode" value="add">
+
+                    <div>
+                        <label for="formMode-title">Titre :</label>
+                        <input type="text" id="formMode-title" name="title" required>
+                    </div>
+
+                    <div class="combined">
+                        <div>
+                            <label for="formMode-author_first">Auteur (Prénom) :</label>
+                            <input type="text" id="formMode-author_first" name="author_first" required>
+                        </div>
+                        <div>
+                            <label for="formMode-author_last">Auteur (Nom) :</label>
+                            <input type="text" id="formMode-author_last" name="author_last" required>
+                        </div>
+                    </div>
+
+                    <div class="combined">
+                        <div>
+                            <label for="formMode-series">Série :</label>
+                            <input type="text" id="formMode-series" name="series">
+                        </div>
+                        <div>
+                            <label for="formMode-volume">Numéro :</label>
+                            <input type="text" id="formMode-volume" name="volume">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="formMode-year">Année :</label>
+                        <input type="text" id="formMode-year" name="year">
+                    </div>
+
+                    <div>
+                        <label for="formMode-language">Langue :</label>
+                        <input type="text" id="formMode-language" name="language">
+                    </div>
+
+                    <div>
+                        <label for="formMode-genre">Genre :</label>
+                        <input type="text" id="formMode-genre" name="genre">
+                    </div>
+
+                    <div>
+                        <label for="formMode-isbn">ISBN :</label>
+                        <input type="text" id="formMode-isbn" name="isbn">
+                    </div>
+
+                    <button type="submit" class="icon" id="formSubmitButton">
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+
+        // Constants
+        const API_ENDPOINTS = {
+            READ_BOOK: '{{ url_for("read_book", book_id="") }}',
+            ADD_BOOK: '{{ url_for("add_book") }}',
+            EDIT_BOOK: '{{ url_for("edit_book", book_id="") }}',
+            DELETE_BOOK: '{{ url_for("delete_book", book_id="") }}'
+        };
+
+        // DOM elements
+        const modal = document.getElementById('bookModal');
+        const bookForm = document.getElementById('bookForm');
+        const addBookButton = document.getElementById('addBookButton');
+        const editBookButton = document.getElementById('editBookButton');
+        const deleteBookButton = document.getElementById('deleteBookButton');
+        const closeModalButton = modal.querySelector('.close');
+
+        // Utility functions
+        const toggleModal = (show) => {
+            modal.style.display = show ? 'block' : 'none';
+        };
+
+        const toggleModalMode = (mode) => {
+            const modes = ['viewMode', 'formMode'];
+            modes.forEach(m =>
+                document.getElementById(m).style.display = m === mode ? 'block' : 'none'
+            );
+        };
+
+        const updateModalWithBookData = (data) => {
+            const fields = ['title', 'author_last', 'author_first', 'series', 'volume', 'year', 'language', 'genre', 'isbn'];
+            fields.forEach(field => {
+                document.getElementById(`viewMode-${field}`).textContent = data[field];
+                document.getElementById(`formMode-${field}`).value = data[field];
+            });
+            console.log(data);
+            deleteBookButton.dataset.bookId = data['id'];
+            editBookButton.dataset.bookId = data['id'];
+            bookForm.dataset.bookId = data['id'];
+            throw new data
+        };
+
+        // API calls
+        const fetchBookData = async (bookId) => {
+            const response = await fetch(`${API_ENDPOINTS.READ_BOOK}${bookId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch book data');
+            }
+            return response.json();
+        };
+
+        const submitBookForm = async (formData, mode, bookId) => {
+            const url = mode === 'add' ? API_ENDPOINTS.ADD_BOOK : `${API_ENDPOINTS.EDIT_BOOK}${bookId}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: formData
+            });
+            if (!response.ok) {
+                throw new Error('Failed to ${mode} the book');
+            }
+            return response.json();
+        };
+
+        const deleteBook = async (bookId) => {
+            const response = await fetch(`${API_ENDPOINTS.DELETE_BOOK}${bookId}`, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+            });
+            if (!response.ok) {
+                throw new Error('Failed to delete the book');
+            }
+        };
+
+        // Event handlers
+        const handleRowClick = async (row) => {
+            const bookId = row.dataset.bookId;
+            try {
+                const data = await fetchBookData(bookId);
+                toggleModal(true);
+                toggleModalMode('viewMode');
+                updateModalWithBookData(data);
+            } catch (error) {
+                console.error('Error fetching book data:', error);
+            }
+        };
+
+        const handleSubmit = async (event) => {
+            event.preventDefault();
+            const formData = new URLSearchParams(new FormData(event.target));
+            const mode = document.getElementById('formMode').value;
+            const bookId = bookForm.dataset.bookId;
+            try {
+                const data = await submitBookForm(formData, mode, bookId);
+                if (data.success) {
+                    toggleModal(false);
+                    location.reload();
+                } else {
+                    console.warn(`Error in ${mode} mode:`, data.error);
+                }
+            } catch (error) {
+                console.error('An unexpected error occurred:', error);
+            }
+        };
+
+        const handleDelete = async () => {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) return;
+            try {
+                const bookId = deleteBookButton.dataset.bookId;
+                await deleteBook(bookId);
+                toggleModal(false);
+                location.reload();
+            } catch (error) {
+                console.error('An unexpected error occurred while deleting the book:', error);
+            }
+        };
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.book-row').forEach(row => {
+                row.addEventListener('click', () => handleRowClick(row));
+            });
+
+            deleteBookButton.addEventListener('click', handleDelete);
+
+            bookForm.addEventListener('submit', handleSubmit);
+
+            editBookButton.addEventListener('click', () => {
+                toggleModalMode('formMode');
+                document.getElementById('formMode').value = 'edit';
+            });
+
+            addBookButton.addEventListener('click', () => {
+                toggleModal(true);
+                bookForm.reset();
+                toggleModalMode('formMode');
+                document.getElementById('formMode').value = 'add';
+            });
+
+            closeModalButton.addEventListener('click', () => toggleModal(false));
+
+            window.onclick = (event) => {
+                if (event.target === modal) {
+                    toggleModal(false);
+                }
+            };
+        });
+
+    </script>
+{% endblock %}
