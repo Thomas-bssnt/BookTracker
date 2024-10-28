@@ -137,10 +137,11 @@ class BookRepository:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT books.*, authors.author_first, authors.author_last 
+                SELECT books.*, authors.author_first, authors.author_last, read_status.status
                 FROM books
                 JOIN authors ON books.author_id = authors.id
-                ORDER BY authors.author_last ASC, authors.author_first ASC, books.year ASC
+                LEFT JOIN read_status ON books.id = read_status.book_id
+                ORDER BY authors.author_last, authors.author_first, books.year
             """
             )
             rows = cursor.fetchall()
@@ -172,6 +173,25 @@ class BookRepository:
             if remaining_books == 0:
                 cursor.execute("DELETE FROM authors WHERE id = ?", (author_id,))
 
+            # Delete the read_status entry if it exists
+            cursor.execute("DELETE FROM read_status WHERE book_id = ?", (book_id,))
+
+            # Commit the changes
+            conn.commit()
+
+    @classmethod
+    def edit_status(cls, book_id, status):
+        with cls.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO read_status (book_id, status)
+                VALUES (?, ?)
+                ON CONFLICT(book_id) 
+                DO UPDATE SET status = excluded.status
+            """,
+                (book_id, status),
+            )
             conn.commit()
 
 
@@ -216,8 +236,7 @@ class Book:
         language,
         genre,
         isbn,
-        id=None,
-        author_id=None,
+        **kwargs,
     ):
         self.title = title
         self.author_last = author_last
@@ -228,6 +247,7 @@ class Book:
         self.language = language
         self.genre = genre
         self.isbn = isbn
+        self.status = None
 
     def to_dict(self):
         """"""
@@ -274,3 +294,8 @@ class Book:
     def get_all():
         """Fetch all books."""
         return BookRepository.find_all()
+
+    @staticmethod
+    def set_status(book_id, status):
+        """Update the status of a book."""
+        BookRepository.edit_status(book_id, status)

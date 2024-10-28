@@ -16,15 +16,28 @@
                 <th>Auteur</th>
                 <th>Série</th>
                 <th>Année</th>
+                <th>Lecture</th>
             </tr>
             </thead>
             <tbody>
             {% for book in books %}
                 <tr data-book-id="{{ book.id }}" class="book-row">
+<!--                    TODO: Remove data-book-id attribute?-->
                     <td>{{ book.title }}</td>
                     <td>{{ book.author_first }} {{ book.author_last }}</td>
-                    <td>{{ book.series }} #{{ book.volume }}</td>
+                    <td>{% if book.series %}{{ book.series }} #{{ book.volume }}{% else %}{% endif %}
                     <td>{% if book.year is not none %}{{ book.year }}{% else %}{% endif %}</td>
+                    <td>
+                        <button id="bookStatusButton" class="icon" data-current-status="{{ book.status }}">
+                            {% if book.status == 'read' %}
+                                <i class="fa-solid fa-check"></i>
+                            {% elif book.status == 'reading' %}
+                                <i class="fa-solid fa-minus"></i>
+                            {% else %}
+                                <i class="fa-solid fa-xmark"></i>
+                            {% endif %}
+                        </button>
+                    </td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -122,7 +135,8 @@
             READ_BOOK: '{{ url_for("read_book", book_id="") }}',
             ADD_BOOK: '{{ url_for("add_book") }}',
             EDIT_BOOK: '{{ url_for("edit_book", book_id="") }}',
-            DELETE_BOOK: '{{ url_for("delete_book", book_id="") }}'
+            DELETE_BOOK: '{{ url_for("delete_book", book_id="") }}',
+            EDIT_STATUS: '{{ url_for("set_status", book_id="") }}'
         };
 
         // DOM elements
@@ -151,7 +165,6 @@
                 document.getElementById(`viewMode-${field}`).textContent = data[field];
                 document.getElementById(`formMode-${field}`).value = data[field];
             });
-            console.log(data);
             deleteBookButton.dataset.bookId = data['id'];
             editBookButton.dataset.bookId = data['id'];
             bookForm.dataset.bookId = data['id'];
@@ -187,6 +200,17 @@
             });
             if (!response.ok) {
                 throw new Error('Failed to delete the book');
+            }
+        };
+
+        const editStatus = async (bookId, status) => {
+            const response = await fetch(`${API_ENDPOINTS.EDIT_STATUS}${bookId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `status=${status}`
+            });
+            if (!response.ok) {
+                throw new Error('Failed to change the book status');
             }
         };
 
@@ -233,10 +257,47 @@
             }
         };
 
+        const handleChangeBookStatus = async (button) => {
+            const row = button.closest('.book-row');
+            const bookId = row.getAttribute('data-book-id');
+
+            const currentStatus = button.getAttribute('data-current-status');
+
+            let newStatus;
+            switch (currentStatus) {
+                case 'not_read':
+                    newStatus = 'reading';
+                    break;
+                case 'reading':
+                    newStatus = 'read';
+                    break;
+                case 'read':
+                    newStatus = 'not_read';
+                    break;
+                default:
+                    newStatus = 'not_read';
+            }
+
+            try {
+                await editStatus(bookId, newStatus);
+                button.setAttribute('data-current-status', newStatus);
+                location.reload();
+            } catch (error) {
+                console.error('An unexpected error occurred while changing the book status:', error);
+            }
+        };
+
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.book-row').forEach(row => {
                 row.addEventListener('click', () => handleRowClick(row));
+            });
+
+            document.querySelectorAll('.book-row button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    event.stopPropagation(); // This prevents the event from bubbling up to the row
+                    handleChangeBookStatus(button);
+                });
             });
 
             deleteBookButton.addEventListener('click', handleDelete);

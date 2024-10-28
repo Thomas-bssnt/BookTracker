@@ -52,3 +52,13 @@ def delete_book(book_id):
         return jsonify(success=True)
     except ValueError as e:
         return jsonify(success=False, error=str(e)), 400
+
+
+@app.route("/set_status/<book_id>", methods=["POST"])
+def set_status(book_id):
+    status = request.form.get("status")
+    try:
+        Book.set_status(book_id, status)
+        return jsonify(success=True)
+    except ValueError as e:
+        return jsonify(success=False, error=str(e)), 400
