@@ -296,7 +296,15 @@
             try {
                 await editStatus(bookId, newStatus);
                 button.setAttribute('data-current-status', newStatus);
-                location.reload();
+
+                // Update the button icon based on the new status
+                if (newStatus === 'read') {
+                    button.innerHTML = '<i class="fa-solid fa-check"></i>';
+                } else if (newStatus === 'reading') {
+                    button.innerHTML = '<i class="fa-solid fa-minus"></i>';
+                } else {
+                    button.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                }
             } catch (error) {
                 console.error('An unexpected error occurred while changing the book status:', error);
             }
