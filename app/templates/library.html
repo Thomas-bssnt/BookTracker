@@ -132,11 +132,11 @@
 
         // Constants
         const API_ENDPOINTS = {
-            READ_BOOK: '{{ url_for("read_book", book_id="") }}',
-            ADD_BOOK: '{{ url_for("add_book") }}',
-            EDIT_BOOK: '{{ url_for("edit_book", book_id="") }}',
-            DELETE_BOOK: '{{ url_for("delete_book", book_id="") }}',
-            EDIT_STATUS: '{{ url_for("set_status", book_id="") }}'
+            CREATE_BOOK: '{{ url_for("create_book") }}',
+            READ_BOOK: (bookId) => '{{ url_for("read_book", book_id="__bookId__") }}'.replace('__bookId__', bookId),
+            UPDATE_BOOK: (bookId) => '{{ url_for("update_book", book_id="__bookId__") }}'.replace('__bookId__', bookId),
+            UPDATE_BOOK_STATUS: (bookId) => '{{ url_for("update_book_status", book_id="__bookId__") }}'.replace('__bookId__', bookId),
+            DELETE_BOOK: (bookId) => '{{ url_for("delete_book", book_id="__bookId__") }}'.replace('__bookId__', bookId),
         };
 
         // DOM elements
@@ -168,53 +168,67 @@
             deleteBookButton.dataset.bookId = data['id'];
             editBookButton.dataset.bookId = data['id'];
             bookForm.dataset.bookId = data['id'];
-            throw new data
         };
 
         // API calls
+
         const fetchBookData = async (bookId) => {
-            const response = await fetch(`${API_ENDPOINTS.READ_BOOK}${bookId}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch book data');
+            const response = await fetch(API_ENDPOINTS.READ_BOOK(bookId), {
+                method: 'GET',
+            });
+
+            const responseData = await response.json();
+            if (responseData.status === 'fail' || responseData.status === 'error') {
+                throw new Error(responseData.data.error || responseData.message);
             }
-            return response.json();
+
+            return responseData.data.book;
         };
 
         const submitBookForm = async (formData, mode, bookId) => {
-            const url = mode === 'add' ? API_ENDPOINTS.ADD_BOOK : `${API_ENDPOINTS.EDIT_BOOK}${bookId}`;
+            const url = mode === 'add' ? API_ENDPOINTS.CREATE_BOOK : API_ENDPOINTS.UPDATE_BOOK(bookId);
+            const method = mode === 'add' ? 'POST' : 'PUT';
             const response = await fetch(url, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: formData
+                method: method,
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData,
             });
-            if (!response.ok) {
-                throw new Error('Failed to ${mode} the book');
+
+            const responseData = await response.json();
+            if (responseData.status === 'fail' || responseData.status === 'error') {
+                throw new Error(responseData.data.error || responseData.message);
             }
-            return response.json();
+
+            return responseData.data;
         };
 
         const deleteBook = async (bookId) => {
-            const response = await fetch(`${API_ENDPOINTS.DELETE_BOOK}${bookId}`, {
+            const response = await fetch(API_ENDPOINTS.DELETE_BOOK(bookId), {
                 method: 'DELETE',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             });
-            if (!response.ok) {
-                throw new Error('Failed to delete the book');
+
+            const responseData = await response.json();
+            if (responseData.status === 'fail' || responseData.status === 'error') {
+                throw new Error(responseData.data.error || responseData.message);
             }
         };
 
         const editStatus = async (bookId, status) => {
-            const response = await fetch(`${API_ENDPOINTS.EDIT_STATUS}${bookId}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `status=${status}`
+            const response = await fetch(API_ENDPOINTS.UPDATE_BOOK_STATUS(bookId), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `status=${status}`,
             });
-            if (!response.ok) {
-                throw new Error('Failed to change the book status');
+
+            const responseData = await response.json();
+            if (responseData.status === 'fail' || responseData.status === 'error') {
+                throw new Error(responseData.data.error || responseData.message);
             }
         };
 
         // Event handlers
+
         const handleRowClick = async (row) => {
             const bookId = row.dataset.bookId;
             try {
@@ -234,7 +248,8 @@
             const bookId = bookForm.dataset.bookId;
             try {
                 const data = await submitBookForm(formData, mode, bookId);
-                if (data.success) {
+                console.log(data);
+                if (data.message) {
                     toggleModal(false);
                     location.reload();
                 } else {

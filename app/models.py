@@ -1,3 +1,6 @@
+from dataclasses import asdict, dataclass, fields
+from typing import Optional, Self
+
 from wtforms import Form, IntegerField, StringField, validators
 import sqlite3
 
@@ -69,6 +72,22 @@ class BookRepository:
         with cls.get_connection() as conn:
             cursor = conn.cursor()
 
+            # Delete author entry if it was the only book of the author
+            cursor.execute("SELECT author_id FROM books WHERE id = ?", (book_id,))
+            old_author_id = cursor.fetchone()[0]
+            cursor.execute(
+                """
+                    DELETE FROM authors 
+                    WHERE id = ?
+                    AND (
+                        SELECT COUNT(*) 
+                        FROM books 
+                        WHERE author_id = ?
+                    ) = 1;
+            """,
+                (old_author_id, old_author_id),
+            )
+
             # Insert author if not exists
             cursor.execute(
                 """
@@ -108,6 +127,7 @@ class BookRepository:
                     book_id,
                 ),
             )
+
             conn.commit()
 
     @classmethod
@@ -223,79 +243,79 @@ class BookForm(Form):
                 field.data = field.data.strip().capitalize()
 
 
+@dataclass
 class Book:
-    def __init__(
-        self,
-        *,
-        title,
-        author_last,
-        author_first,
-        series,
-        volume,
-        year,
-        language,
-        genre,
-        isbn,
-        **kwargs,
-    ):
-        self.title = title
-        self.author_last = author_last
-        self.author_first = author_first
-        self.series = series
-        self.volume = volume
-        self.year = year
-        self.language = language
-        self.genre = genre
-        self.isbn = isbn
-        self.status = None
+    title: str
+    author_last: str
+    author_first: str
+    series: Optional[str] = None
+    volume: Optional[int] = None
+    year: Optional[int] = None
+    language: Optional[str] = None
+    genre: Optional[str] = None
+    isbn: Optional[int] = None
 
-    def to_dict(self):
-        """"""
-        return {
-            "title": self.title,
-            "author_last": self.author_last,
-            "author_first": self.author_first,
-            "series": self.series,
-            "volume": self.volume,
-            "year": self.year,
-            "language": self.language,
-            "genre": self.genre,
-            "isbn": self.isbn,
-        }
-
-    def save(self):
-        """Save the book to the database."""
-        BookRepository.save(self)
-
-    def update(self, book_id):
-        """Update an existing book."""
-        BookRepository.update(book_id, self)
+    def __init__(self, **kwargs) -> None:
+        """Initialize a book with provided field values."""
+        for field_name in {f.name for f in fields(self)}:
+            if field_name in kwargs:
+                setattr(self, field_name, kwargs[field_name])
 
     @classmethod
-    def get_by_id(cls, book_id):
-        """Fetch a book by its ID."""
-        book_data = BookRepository.find_by_id(book_id)
-        return cls(**book_data)
+    def from_id(cls, book_id) -> Self:
+        """Create a book instance from repository by ID."""
+        try:
+            book_data = BookRepository.find_by_id(book_id)
+            return cls(**book_data)
+        except Exception as e:
+            raise RuntimeError(f"Failed to fetch book {book_id}: {e}")
 
     @classmethod
-    def from_request(cls, form_data):
-        """Create a book instance from a request's form data."""
+    def from_form(cls, form_data) -> Self:
+        """Create a book instance from form data with validation."""
         form = BookForm(form_data)
         if not form.validate():
             raise ValueError(f"Invalid form data: {form.errors}")
         return cls(**form.data)
 
-    @staticmethod
-    def delete(book_id):
-        """Delete a book by its ID."""
-        BookRepository.delete(book_id)
+    def to_dict(self) -> dict:
+        """Convert a book instance to dictionary."""
+        return asdict(self)
+
+    def save(self) -> None:
+        """Save a book in the repository."""
+        try:
+            BookRepository.save(self)
+        except Exception as e:
+            raise RuntimeError(f"Failed to save book: {e}")
+
+    def update(self, book_id) -> None:
+        """Update a book in the repository."""
+        try:
+            BookRepository.update(book_id, self)
+        except Exception as e:
+            raise RuntimeError(f"Failed to update book {book_id}: {e}")
 
     @staticmethod
-    def get_all():
-        """Fetch all books."""
-        return BookRepository.find_all()
+    def get_all() -> list[dict]:
+        """Retrieve all books from repository."""
+        try:
+            return BookRepository.find_all()
+        except Exception as e:
+            raise RuntimeError(f"Failed to fetch books: {e}")
 
     @staticmethod
-    def set_status(book_id, status):
-        """Update the status of a book."""
-        BookRepository.edit_status(book_id, status)
+    def delete(book_id) -> None:
+        """Remove a book from repository by ID."""
+        try:
+            BookRepository.delete(book_id)
+        except Exception as e:
+            raise RuntimeError(f"Failed to delete book {book_id}: {e}")
+
+    @staticmethod
+    def update_status(book_id, status) -> None:
+        """Update a book's status in repository."""
+        try:
+            BookRepository.edit_status(book_id, status)
+        except Exception as e:
+            raise RuntimeError(f"Failed to update status of book {book_id}: {e}")
