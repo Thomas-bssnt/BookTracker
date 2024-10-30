@@ -20,21 +20,11 @@ CREATE TABLE IF NOT EXISTS authors
     UNIQUE (author_last, author_first)
 );
 
--- CREATE TABLE IF NOT EXISTS users
--- (
---     id     INTEGER PRIMARY KEY AUTOINCREMENT,
---     pseudo TEXT NOT NULL,
---     UNIQUE (pseudo)
--- );
-
 CREATE TABLE IF NOT EXISTS read_status
 (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
---     user_id INTEGER NOT NULL,
     book_id INTEGER NOT NULL,
     status  TEXT    NOT NULL CHECK (status IN ('not_read', 'reading', 'read')),
---     FOREIGN KEY (user_id) REFERENCES users (id),
     FOREIGN KEY (book_id) REFERENCES books (id),
---     UNIQUE (user_id, book_id)
     UNIQUE (book_id)
 );

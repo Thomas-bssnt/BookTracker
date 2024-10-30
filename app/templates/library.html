@@ -70,7 +70,7 @@
 
             <div id="formMode">
                 <form id="bookForm">
-                    <input type="hidden" id="formMode" value="add">
+                    <input type="hidden" id="formModeInput" value="add">
 
                     <div>
                         <label for="formMode-title">Titre :</label>
@@ -244,7 +244,7 @@
         const handleSubmit = async (event) => {
             event.preventDefault();
             const formData = new URLSearchParams(new FormData(event.target));
-            const mode = document.getElementById('formMode').value;
+            const mode = document.getElementById('formModeInput').value;
             const bookId = bookForm.dataset.bookId;
             try {
                 const data = await submitBookForm(formData, mode, bookId);
@@ -329,14 +329,14 @@
 
             editBookButton.addEventListener('click', () => {
                 toggleModalMode('formMode');
-                document.getElementById('formMode').value = 'edit';
+                document.getElementById('formModeInput').value = 'edit';
             });
 
             addBookButton.addEventListener('click', () => {
                 toggleModal(true);
                 bookForm.reset();
                 toggleModalMode('formMode');
-                document.getElementById('formMode').value = 'add';
+                document.getElementById('formModeInput').value = 'add';
             });
 
             closeModalButton.addEventListener('click', () => toggleModal(false));
