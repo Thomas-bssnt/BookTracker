@@ -159,7 +159,7 @@ const handleChangeBookStatus = async (button) => {
             newStatus = 'not_read';
             break;
         default:
-            newStatus = 'not_read';
+            newStatus = 'reading';
     }
 
     try {
