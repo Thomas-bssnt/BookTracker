@@ -67,7 +67,7 @@ def create_book() -> Response:
     """Create a new book."""
     try:
         book = Book.from_form(request.form)
-        book.save()
+        book.create()
         return make_response("success", data={"message": "Book created successfully"})
     except Exception as e:
         return make_response(
@@ -98,9 +98,10 @@ def read_book(book_id) -> Response:
     """Get a book by ID."""
     try:
         book = Book.from_id(book_id)
+        data = book.to_dict() | {"id": book_id}
         return make_response(
             "success",
-            data={"book": book.to_dict() | {"id": book_id}},
+            data={"book": data},
         )
     # TODO: Check if the `| {"id": book_id}` part is needed
     except Exception as e:
@@ -150,7 +151,6 @@ def delete_book(book_id) -> Response:
 def update_book_status(book_id) -> Response:
     """Update a book's status."""
     status = request.form.get("status")
-    print(status)
     try:
         Book.update_status(book_id, status)
         return make_response(
@@ -158,7 +158,6 @@ def update_book_status(book_id) -> Response:
             data={"message": "Book status updated successfully"},
         )
     except Exception as e:
-        print(status, e)
         return make_response(
             "fail",
             data={"error": str(e)},
