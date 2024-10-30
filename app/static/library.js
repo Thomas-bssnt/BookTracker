@@ -59,7 +59,7 @@ const submitBookForm = async (formData, mode, bookId) => {
     const method = mode === 'add' ? 'POST' : 'PUT';
     const response = await fetch(url, {
         method: method,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: formData,
     });
 
@@ -74,7 +74,7 @@ const submitBookForm = async (formData, mode, bookId) => {
 const deleteBook = async (bookId) => {
     const response = await fetch(API_ENDPOINTS.DELETE_BOOK(bookId), {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
     });
 
     const responseData = await response.json();
@@ -86,7 +86,7 @@ const deleteBook = async (bookId) => {
 const editStatus = async (bookId, status) => {
     const response = await fetch(API_ENDPOINTS.UPDATE_BOOK_STATUS(bookId), {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: `status=${status}`,
     });
 
