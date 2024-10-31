@@ -2,130 +2,130 @@
 
 {% block content %}
 
-    <h2>Bibliothèque</h2>
+<h2>Bibliothèque</h2>
 
-    <button id="addBookButton" class="icon">
-        <i class="fa-solid fa-plus"></i>
-    </button>
+<button id="addBookButton" class="icon">
+    <i class="fa-solid fa-plus"></i>
+</button>
 
-    <div class="table-container">
-        <table class="book-table">
-            <thead>
-            <tr>
-                <th>Titre</th>
-                <th>Auteur</th>
-                <th>Série</th>
-                <th>Année</th>
-                <th>Lecture</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for book in books %}
-                <tr data-book-id="{{ book.id }}" class="book-row">
-<!--                    TODO: Remove data-book-id attribute?-->
-                    <td>{{ book.title }}</td>
-                    <td>{{ book.author_first }} {{ book.author_last }}</td>
-                    <td>{% if book.series %}{{ book.series }} #{{ book.volume }}{% else %}{% endif %}
-                    <td>{% if book.year is not none %}{{ book.year }}{% else %}{% endif %}</td>
-                    <td>
-                        <button id="bookStatusButton" class="icon" data-current-status="{{ book.status }}">
-                            {% if book.status == 'read' %}
-                                <i class="fa-solid fa-check"></i>
-                            {% elif book.status == 'reading' %}
-                                <i class="fa-solid fa-minus"></i>
-                            {% else %}
-                                <i class="fa-solid fa-xmark"></i>
-                            {% endif %}
-                        </button>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div id="bookModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-
-            <div id="viewMode">
-                <p><strong>Titre :</strong> <span id="viewMode-title"></span></p>
-                <p><strong>Auteur :</strong> <span id="viewMode-author_first"></span>
-                    <span id="viewMode-author_last"></span></p>
-                <p><strong>Série :</strong> <span id="viewMode-series"></span> <span id="viewMode-volume"></span></p>
-
-                <p><strong>Année :</strong> <span id="viewMode-year"></span></p>
-                <p><strong>Langue :</strong> <span id="viewMode-language"></span></p>
-                <p><strong>Genre :</strong> <span id="viewMode-genre"></span></p>
-                <p><strong>ISBN :</strong> <span id="viewMode-isbn"></span></p>
-
-                <button id="editBookButton" class="icon">
-                    <i class="fa-solid fa-pen-to-square"></i>
+<div class="table-container">
+    <table class="book-table">
+        <thead>
+        <tr>
+            <th>Titre</th>
+            <th>Auteur</th>
+            <th>Série</th>
+            <th>Année</th>
+            <th>Lecture</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for book in books %}
+        <tr data-book-id="{{ book.id }}" class="book-row">
+            <!--                    TODO: Remove data-book-id attribute?-->
+            <td>{{ book.title }}</td>
+            <td>{{ book.author_first }} {{ book.author_last }}</td>
+            <td>{% if book.series %}{{ book.series }} #{{ book.volume }}{% else %}{% endif %}
+            <td>{% if book.year is not none %}{{ book.year }}{% else %}{% endif %}</td>
+            <td>
+                <button id="bookStatusButton" class="icon" data-current-status="{{ book.status }}">
+                    {% if book.status == 'read' %}
+                    <i class="fa-solid fa-check"></i>
+                    {% elif book.status == 'reading' %}
+                    <i class="fa-solid fa-minus"></i>
+                    {% else %}
+                    <i class="fa-solid fa-xmark"></i>
+                    {% endif %}
                 </button>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-                <button id="deleteBookButton" class="icon">
-                    <i class="fa-solid fa-trash"></i>
+<div id="bookModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+
+        <div id="viewMode">
+            <p><strong>Titre :</strong> <span id="viewMode-title"></span></p>
+            <p><strong>Auteur :</strong> <span id="viewMode-author_first"></span>
+                <span id="viewMode-author_last"></span></p>
+            <p><strong>Série :</strong> <span id="viewMode-series"></span> <span id="viewMode-volume"></span></p>
+
+            <p><strong>Année :</strong> <span id="viewMode-year"></span></p>
+            <p><strong>Langue :</strong> <span id="viewMode-language"></span></p>
+            <p><strong>Genre :</strong> <span id="viewMode-genre"></span></p>
+            <p><strong>ISBN :</strong> <span id="viewMode-isbn"></span></p>
+
+            <button id="editBookButton" class="icon">
+                <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+
+            <button id="deleteBookButton" class="icon">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </div>
+
+        <div id="formMode">
+            <form id="bookForm">
+                <input type="hidden" id="formModeInput" value="add">
+
+                <div>
+                    <label for="formMode-title">Titre :</label>
+                    <input type="text" id="formMode-title" name="title" required>
+                </div>
+
+                <div class="combined">
+                    <div>
+                        <label for="formMode-author_first">Auteur (Prénom) :</label>
+                        <input type="text" id="formMode-author_first" name="author_first">
+                    </div>
+                    <div>
+                        <label for="formMode-author_last">Auteur (Nom) :</label>
+                        <input type="text" id="formMode-author_last" name="author_last" required>
+                    </div>
+                </div>
+
+                <div class="combined">
+                    <div>
+                        <label for="formMode-series">Série :</label>
+                        <input type="text" id="formMode-series" name="series">
+                    </div>
+                    <div>
+                        <label for="formMode-volume">Numéro :</label>
+                        <input type="text" id="formMode-volume" name="volume">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="formMode-year">Année :</label>
+                    <input type="text" id="formMode-year" name="year">
+                </div>
+
+                <div>
+                    <label for="formMode-language">Langue :</label>
+                    <input type="text" id="formMode-language" name="language">
+                </div>
+
+                <div>
+                    <label for="formMode-genre">Genre :</label>
+                    <input type="text" id="formMode-genre" name="genre">
+                </div>
+
+                <div>
+                    <label for="formMode-isbn">ISBN :</label>
+                    <input type="text" id="formMode-isbn" name="isbn">
+                </div>
+
+                <button type="submit" class="icon" id="formSubmitButton">
+                    <i class="fa-solid fa-check"></i>
                 </button>
-            </div>
-
-            <div id="formMode">
-                <form id="bookForm">
-                    <input type="hidden" id="formModeInput" value="add">
-
-                    <div>
-                        <label for="formMode-title">Titre :</label>
-                        <input type="text" id="formMode-title" name="title" required>
-                    </div>
-
-                    <div class="combined">
-                        <div>
-                            <label for="formMode-author_first">Auteur (Prénom) :</label>
-                            <input type="text" id="formMode-author_first" name="author_first" required>
-                        </div>
-                        <div>
-                            <label for="formMode-author_last">Auteur (Nom) :</label>
-                            <input type="text" id="formMode-author_last" name="author_last" required>
-                        </div>
-                    </div>
-
-                    <div class="combined">
-                        <div>
-                            <label for="formMode-series">Série :</label>
-                            <input type="text" id="formMode-series" name="series">
-                        </div>
-                        <div>
-                            <label for="formMode-volume">Numéro :</label>
-                            <input type="text" id="formMode-volume" name="volume">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label for="formMode-year">Année :</label>
-                        <input type="text" id="formMode-year" name="year">
-                    </div>
-
-                    <div>
-                        <label for="formMode-language">Langue :</label>
-                        <input type="text" id="formMode-language" name="language">
-                    </div>
-
-                    <div>
-                        <label for="formMode-genre">Genre :</label>
-                        <input type="text" id="formMode-genre" name="genre">
-                    </div>
-
-                    <div>
-                        <label for="formMode-isbn">ISBN :</label>
-                        <input type="text" id="formMode-isbn" name="isbn">
-                    </div>
-
-                    <button type="submit" class="icon" id="formSubmitButton">
-                        <i class="fa-solid fa-check"></i>
-                    </button>
-                </form>
-            </div>
+            </form>
         </div>
     </div>
+</div>
 
 <script src="{{ url_for('static', filename='library.js') }}"></script>
 

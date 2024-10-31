@@ -194,7 +194,7 @@ class BookRepository:
 class BookForm(Form):
     title = StringField("Title", [validators.DataRequired()])
     author_last = StringField("Author Last Name", [validators.DataRequired()])
-    author_first = StringField("Author First Name", [validators.DataRequired()])
+    author_first = StringField("Author First Name", [validators.Optional()])
     series = StringField("Series", [validators.Optional()])
     volume = IntegerField(
         "Volume",
