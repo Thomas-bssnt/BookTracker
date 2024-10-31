@@ -1,3 +1,4 @@
+from csv import reader
 from dataclasses import asdict, dataclass, fields
 from typing import Optional, Self
 from pathlib import Path
@@ -13,7 +14,79 @@ def init_db():
     with sqlite3.connect(DATABASE_PATH) as conn, open(SCHEMA_PATH) as f:
         cursor = conn.cursor()
         cursor.executescript(f.read())
+
+        cursor.execute("SELECT * FROM books")
+        if not cursor.fetchone():
+            import_data("data.csv")
+
         conn.commit()
+
+
+def import_data(filename):
+
+    with open(filename) as f:
+        r = reader(f, delimiter=";")
+        next(r)
+        for row in r:
+
+            title = row[0]
+
+            try:
+                author_last, author_first = row[1].split("\n")[0].split(", ")
+            except ValueError:
+                author_last = row[1]
+                author_first = ""
+            # TODO: Add secondary authors
+            # TODO: Allow author_last to be None
+
+            if row[2]:
+                series, volume = row[2].split(" #")
+            else:
+                series = None
+                volume = None
+
+            if row[3]:
+                year = row[3]
+            else:
+                year = None
+
+            if row[7]:
+                language = row[7]
+            else:
+                language = None
+
+            if row[5]:
+                genre = row[5]
+            else:
+                genre = None
+
+            isbn = None
+
+            if row[8] == "Oui":
+                status = "read"
+            else:
+                status = "not_read"
+
+            # TODO: add book type, éditeur, collection, format
+
+            book = Book(
+                title=title,
+                author_last=author_last,
+                author_first=author_first,
+                series=series,
+                volume=volume,
+                year=year,
+                language=language,
+                genre=genre,
+                isbn=isbn,
+            )
+
+            try:
+                book_id = BookRepository.create(book)
+                BookRepository.update_reading_status(book_id, status)
+            except Exception as e:
+                print(f"Failed to import {title}: {e}")
+                print(book)
 
 
 class BookRepository:
@@ -28,7 +101,7 @@ class BookRepository:
     # Core CRUD operations
     @classmethod
     def create(cls, book):
-        """Create a new book record."""
+        """Create a new book record and return its ID."""
         with cls.get_connection() as conn:
             cursor = conn.cursor()
 
@@ -52,7 +125,10 @@ class BookRepository:
                 ),
             )
 
+            book_id = cursor.lastrowid
             conn.commit()
+
+            return book_id
 
     @classmethod
     def find_all(cls):
