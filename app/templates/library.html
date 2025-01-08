@@ -57,6 +57,9 @@
             <p><strong>Année :</strong> <span id="viewMode-year"></span></p>
             <p><strong>Langue :</strong> <span id="viewMode-language"></span></p>
             <p><strong>Genre :</strong> <span id="viewMode-genre"></span></p>
+            <p><strong>Forme :</strong> <span id="viewMode-written_form"></span></p>
+            <p><strong>Éditeur :</strong> <span id="viewMode-publisher"></span></p>
+            <p><strong>Collection :</strong> <span id="viewMode-collection"></span></p>
             <p><strong>ISBN :</strong> <span id="viewMode-isbn"></span></p>
 
             <button id="editBookButton" class="icon">
@@ -112,6 +115,22 @@
                 <div>
                     <label for="formMode-genre">Genre :</label>
                     <input type="text" id="formMode-genre" name="genre">
+                </div>
+
+                <div>
+                    <label for="formMode-written_form">Forme :</label>
+                    <input type="text" id="formMode-written_form" name="written_form">
+                </div>
+
+                <div class="combined">
+                    <div>
+                        <label for="formMode-publisher">Éditeur :</label>
+                        <input type="text" id="formMode-publisher" name="publisher">
+                    </div>
+                    <div>
+                        <label for="formMode-collection">Collection :</label>
+                        <input type="text" id="formMode-collection" name="collection" required>
+                    </div>
                 </div>
 
                 <div>

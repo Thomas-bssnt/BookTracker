@@ -36,8 +36,6 @@ def import_data(filename):
             except ValueError:
                 author_last = row[1]
                 author_first = ""
-            # TODO: Add secondary authors
-            # TODO: Allow author_last to be None
 
             if row[2]:
                 series, volume = row[2].split(" #")
@@ -60,14 +58,26 @@ def import_data(filename):
             else:
                 genre = None
 
+            if row[4]:
+                written_form = row[4]
+            else:
+                written_form = None
+
+            if row[6]:
+                text = row[6].split(" - ")
+                publisher = text[0]
+                if len(text) > 1:
+                    collection = ", ".join(text[1:])
+            else:
+                publisher = None
+                collection = None
+
             isbn = None
 
             if row[8] == "Oui":
                 status = "read"
             else:
                 status = "not_read"
-
-            # TODO: add book type, éditeur, collection, format
 
             book = Book(
                 title=title,
@@ -78,6 +88,9 @@ def import_data(filename):
                 year=year,
                 language=language,
                 genre=genre,
+                written_form=written_form,
+                publisher=publisher,
+                collection=collection,
                 isbn=isbn,
             )
 
@@ -110,8 +123,20 @@ class BookRepository:
             )
             cursor.execute(
                 """
-                INSERT INTO books (title, author_id, series, volume, year, language, genre, isbn)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO books (
+                    title, 
+                    author_id, 
+                    series, 
+                    volume, 
+                    year, 
+                    language, 
+                    genre, 
+                    written_form, 
+                    publisher,
+                    collection,
+                    isbn
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     book.title,
@@ -121,6 +146,9 @@ class BookRepository:
                     book.year,
                     book.language,
                     book.genre,
+                    book.written_form,
+                    book.publisher,
+                    book.collection,
                     book.isbn,
                 ),
             )
@@ -184,7 +212,17 @@ class BookRepository:
             cursor.execute(
                 """
                 UPDATE books
-                SET title = ?, author_id = ?, series = ?, volume = ?, year = ?, language = ?, genre = ?, isbn = ?
+                SET title = ?, 
+                    author_id = ?, 
+                    series = ?, 
+                    volume = ?, 
+                    year = ?, 
+                    language = ?, 
+                    genre = ?, 
+                    written_form = ?,
+                    publisher = ?,
+                    collection = ?, 
+                    isbn = ?
                 WHERE id = ?
             """,
                 (
@@ -195,6 +233,9 @@ class BookRepository:
                     book.year,
                     book.language,
                     book.genre,
+                    book.written_form,
+                    book.publisher,
+                    book.collection,
                     book.isbn,
                     book_id,
                 ),
@@ -282,6 +323,9 @@ class BookForm(Form):
     )
     language = StringField("Language", [validators.Optional()])
     genre = StringField("Genre", [validators.Optional()])
+    written_form = StringField("Written Form", [validators.Optional()])
+    publisher = StringField("Publisher", [validators.Optional()])
+    collection = StringField("Collection", [validators.Optional()])
     isbn = IntegerField("ISBN", [validators.Optional()])
 
     def process(self, formdata=None, obj=None, data=None, **kwargs):
@@ -307,6 +351,9 @@ class Book:
     year: Optional[int] = None
     language: Optional[str] = None
     genre: Optional[str] = None
+    written_form: Optional[str] = None
+    publisher: Optional[str] = None
+    collection: Optional[str] = None
     isbn: Optional[int] = None
 
     def __init__(self, **kwargs) -> None:

@@ -1,14 +1,17 @@
 CREATE TABLE IF NOT EXISTS books
 (
-    id        INTEGER PRIMARY KEY AUTOINCREMENT,
-    title     TEXT NOT NULL,
-    author_id INTEGER,
-    series    TEXT,
-    volume    INTEGER CHECK (volume IS NULL OR volume > 0),
-    year      INTEGER CHECK (year >= 0),
-    language  TEXT,
-    genre     TEXT,
-    isbn      INTEGER UNIQUE,
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    title        TEXT NOT NULL,
+    author_id    INTEGER,
+    series       TEXT,
+    volume       INTEGER CHECK (volume IS NULL OR volume > 0),
+    year         INTEGER CHECK (year >= 0),
+    language     TEXT,
+    genre        TEXT,
+    written_form TEXT,
+    publisher    TEXT,
+    collection   TEXT,
+    isbn         INTEGER UNIQUE,
     FOREIGN KEY (author_id) REFERENCES authors (id)
 );
 

@@ -29,7 +29,7 @@ const toggleModalMode = (mode) => {
 };
 
 const updateModalWithBookData = (data) => {
-    const fields = ['title', 'author_last', 'author_first', 'series', 'volume', 'year', 'language', 'genre', 'isbn'];
+    const fields = ['title', 'author_last', 'author_first', 'series', 'volume', 'year', 'language', 'genre', 'written_form', 'isbn'];
     fields.forEach(field => {
         document.getElementById(`viewMode-${field}`).textContent = data[field];
         document.getElementById(`formMode-${field}`).value = data[field];

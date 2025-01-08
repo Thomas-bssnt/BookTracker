@@ -33,7 +33,7 @@ main {
     padding: 20px;
     background-color: var(--color-primary);
     color: var(--color-text-white);
-    height: 80vh;
+    height: 1000vh;
 }
 
 footer {
