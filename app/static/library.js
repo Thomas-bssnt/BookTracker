@@ -1,6 +1,7 @@
 const API_ENDPOINTS = {
     CREATE_BOOK: '/api/books',
     READ_BOOK: (bookId) => `/api/books/${bookId}`,
+    READ_BOOK_ISBN: (isbn) => `/api/books/isbn/${isbn}`,
     UPDATE_BOOK: (bookId) => `/api/books/${bookId}`,
     UPDATE_BOOK_STATUS: (bookId) => `/api/books/${bookId}/status`,
     DELETE_BOOK: (bookId) => `/api/books/${bookId}`,
@@ -8,17 +9,22 @@ const API_ENDPOINTS = {
 
 // DOM elements
 
-const modal = document.getElementById('bookModal');
+const bookModal = document.getElementById('bookModal');
 const bookForm = document.getElementById('bookForm');
+const isbnForm = document.getElementById('isbnForm');
 const addBookButton = document.getElementById('addBookButton');
+const manualAddButton = document.getElementById('manualAddButton');
+const isbnAddButton = document.getElementById('isbnAddButton');
 const editBookButton = document.getElementById('editBookButton');
 const deleteBookButton = document.getElementById('deleteBookButton');
-const closeModalButton = modal.querySelector('.close');
+const closeModalButton = bookModal.querySelector('.close');
+const isbnModal = document.getElementById("isbnModal");
+const addBookDropdown = document.getElementById("addBookDropdown");
 
 // Utility functions
 
 const toggleModal = (show) => {
-    modal.style.display = show ? 'block' : 'none';
+    bookModal.style.display = show ? 'block' : 'none';
 };
 
 const toggleModalMode = (mode) => {
@@ -29,7 +35,7 @@ const toggleModalMode = (mode) => {
 };
 
 const updateModalWithBookData = (data) => {
-    const fields = ['title', 'author_last', 'author_first', 'series', 'volume', 'year', 'language', 'genre', 'written_form', 'isbn'];
+    const fields = ['title', 'author_last', 'author_first', 'series', 'volume', 'year', 'language', 'genre', 'written_form', 'publisher', 'collection', 'isbn'];
     fields.forEach(field => {
         document.getElementById(`viewMode-${field}`).textContent = data[field];
         document.getElementById(`formMode-${field}`).value = data[field];
@@ -117,7 +123,6 @@ const handleSubmit = async (event) => {
     const bookId = bookForm.dataset.bookId;
     try {
         const data = await submitBookForm(formData, mode, bookId);
-        console.log(data);
         if (data.message) {
             toggleModal(false);
             location.reload();
@@ -128,6 +133,37 @@ const handleSubmit = async (event) => {
         console.error('An unexpected error occurred:', error);
     }
 };
+
+const handleSubmitIsbnForm = async (event) => {
+
+    event.preventDefault();
+    const isbnInput = document.getElementById("isbnForm-isbn");
+    const isbn = isbnInput.value.trim();
+
+    try {
+        const data = await submitIsbnForm(isbn);
+        console.log(data);
+        toggleModal(true);
+        bookForm.reset();
+        updateModalWithBookData(data);
+        toggleModalMode('formMode');
+        document.getElementById('formModeInput').value = 'add';
+    } catch (error) {
+        console.error('An unexpected error occurred:', error);
+    }
+};
+
+const submitIsbnForm = async (isbn) => {
+    const response = await fetch(API_ENDPOINTS.READ_BOOK_ISBN(isbn), {method: "GET",});
+
+    const responseData = await response.json();
+    if (responseData.status === 'fail' || responseData.status === 'error') {
+        throw new Error(responseData.data.error || responseData.message);
+    }
+
+    return responseData.data.book;
+};
+
 
 const handleDelete = async () => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) return;
@@ -195,24 +231,36 @@ document.addEventListener('DOMContentLoaded', () => {
     deleteBookButton.addEventListener('click', handleDelete);
 
     bookForm.addEventListener('submit', handleSubmit);
+    isbnForm.addEventListener('submit', handleSubmitIsbnForm);
 
     editBookButton.addEventListener('click', () => {
         toggleModalMode('formMode');
         document.getElementById('formModeInput').value = 'edit';
     });
 
-    addBookButton.addEventListener('click', () => {
+    manualAddButton.addEventListener('click', () => {
         toggleModal(true);
         bookForm.reset();
         toggleModalMode('formMode');
         document.getElementById('formModeInput').value = 'add';
+        addBookDropdown.classList.toggle("show");
     });
 
     closeModalButton.addEventListener('click', () => toggleModal(false));
 
     window.onclick = (event) => {
-        if (event.target === modal) {
+        if (event.target === bookModal) {
             toggleModal(false);
         }
     };
+
+    addBookButton.addEventListener("click", () => {
+        addBookDropdown.classList.toggle("show");
+    });
+
+    isbnAddButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        isbnModal.classList.toggle('show');
+        addBookDropdown.classList.toggle("show");
+    });
 });

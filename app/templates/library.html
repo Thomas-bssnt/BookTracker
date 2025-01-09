@@ -4,9 +4,16 @@
 
 <h2>Bibliothèque</h2>
 
-<button id="addBookButton" class="icon">
-    <i class="fa-solid fa-plus"></i>
-</button>
+<div>
+    <button id="addBookButton" class="icon">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+    <div id="addBookDropdown" class="dropdown-content">
+        <button id="manualAddButton">Ajout manuel</button>
+        <button id="isbnAddButton">Ajout par ISBN</button>
+        <button id="barcodeAddButton">Ajout par code-barres</button>
+    </div>
+</div>
 
 <div class="table-container">
     <table class="book-table">
@@ -129,7 +136,7 @@
                     </div>
                     <div>
                         <label for="formMode-collection">Collection :</label>
-                        <input type="text" id="formMode-collection" name="collection" required>
+                        <input type="text" id="formMode-collection" name="collection">
                     </div>
                 </div>
 
@@ -143,6 +150,18 @@
                 </button>
             </form>
         </div>
+    </div>
+</div>
+
+<div id="isbnModal" class="modal">
+    <div class="modal-content">
+        <form id="isbnForm">
+            <label for="isbnForm-isbn">ISBN :</label>
+            <input type="text" id="isbnForm-isbn" name="isbn" required>
+            <button type="submit" class="icon" id="isbnFormSubmitButton">
+                <i class="fa-solid fa-check"></i>
+            </button>
+        </form>
     </div>
 </div>
 

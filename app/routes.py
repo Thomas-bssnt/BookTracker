@@ -112,6 +112,32 @@ def read_book(book_id) -> Response:
         )
 
 
+@app.route("/api/books/isbn/<isbn>", methods=["GET"])
+def get_book_by_isbn(isbn) -> Response:
+    """Fetch book details using an ISBN."""
+
+    if not isbn:
+        return make_response(
+            "fail",
+            data={"error": "ISBN is required"},
+            code=HTTPStatus.BAD_REQUEST,
+        )
+
+    try:
+        book = Book.from_isbn(isbn)
+        data = book.to_dict()
+        return make_response(
+            "success",
+            data={"book": data},
+        )
+    except Exception as e:
+        return make_response(
+            "fail",
+            data={"error": str(e)},
+            code=HTTPStatus.BAD_REQUEST,
+        )
+
+
 @app.route("/api/books/<book_id>", methods=["PUT"])
 def update_book(book_id) -> Response:
     """Update an existing book."""

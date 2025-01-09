@@ -3,6 +3,8 @@ from dataclasses import asdict, dataclass, fields
 from typing import Optional, Self
 from pathlib import Path
 
+import requests
+
 from wtforms import Form, IntegerField, StringField, validators
 import sqlite3
 
@@ -370,6 +372,45 @@ class Book:
             return cls(**book_data)
         except Exception as e:
             raise RuntimeError(f"Failed to fetch book {book_id}: {e}")
+
+    @classmethod
+    def from_isbn(cls, isbn) -> Self:
+        """Create a book instance from Google Books API by ISBN."""
+        api_url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
+        response = requests.get(api_url)
+
+        try:
+            data = response.json()
+            if "items" in data:
+                book_info = data["items"][0]["volumeInfo"]
+
+                authors = book_info.get("authors", [""])
+                author = authors[0].split(" ")
+
+                industry_identifiers = book_info.get("industryIdentifiers", [])
+                for identifier in industry_identifiers:
+                    if identifier["type"] == "ISBN_13":
+                        isbn = identifier["identifier"]
+                        break
+                    elif identifier["type"] == "ISBN_10":
+                        isbn = identifier["identifier"]
+
+                return cls(
+                    title=book_info.get("title", ""),
+                    author_last=" ".join(author[:-1]),
+                    author_first=author[-1],
+                    series=None,
+                    volume=None,
+                    year=book_info.get("publishedDate", None),
+                    language=book_info.get("language", None),
+                    genre=None,
+                    written_form=None,
+                    publisher=book_info.get("publisher", None),
+                    collection=None,
+                    isbn=isbn,
+                )
+        except Exception as e:
+            raise RuntimeError(f"Failed to fetch book isbn: {isbn}: {e}")
 
     @classmethod
     def from_form(cls, form_data) -> Self:
