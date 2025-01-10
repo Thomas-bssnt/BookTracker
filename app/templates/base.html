@@ -10,13 +10,27 @@
 </head>
 
 <body>
+
 <header>
-    <h1>Book Tracker</h1>
-    <nav>
-        <a href="{{ url_for('index') }}">Bibliothèque</a>
-        <a href="{{ url_for('stats') }}">Statistiques</a>
-    </nav>
+    <button id="menuButton" class="icon">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <h1>
+        <a href="{{ url_for('index') }}">Book Tracker</a>
+    </h1>
 </header>
+
+<nav>
+    <a href="{{ url_for('index') }}">
+        <i class="fa-solid fa-book"></i>
+        Bibliothèque
+    </a>
+    <a href="{{ url_for('stats') }}">
+        <i class="fa-solid fa-chart-line"></i>
+        Statistiques
+    </a>
+</nav>
 
 <main>
     {% block content %}
@@ -26,3 +40,5 @@
 </body>
 
 </html>
+
+<script src="{{ url_for('static', filename='base.js') }}"></script>

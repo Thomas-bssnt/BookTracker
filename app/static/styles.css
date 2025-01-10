@@ -10,40 +10,120 @@
     --color-text-black: #000000;
 }
 
+/*Header*/
+
+header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    background-color: var(--color-secondary);
+    color: var(--color-text-white);
+    z-index: 1000;
+}
+
+#menuButton {
+    position: absolute;
+    left: 10px;
+}
+
+#menuButton:hover {
+    background-color: var(--color-primary);
+    color: var(--color-text-white);
+}
+
+h1 {
+    font-size: 22pt;
+    margin: 0;
+}
+
+/*Navigation*/
+
+nav {
+    height: 100%;
+    width: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding-top: 50px;
+    background-color: var(--color-secondary);
+    overflow-x: hidden;
+    transition: 0.3s;
+}
+
+nav.open {
+    width: 180px;
+}
+
+main.shifted {
+    margin-left: 180px;
+}
+
+main {
+    transition: margin-left .3s;
+}
+
+nav a {
+    padding: 8px 8px 8px 10px;
+    font-size: 16pt;
+    align-items: center;
+    transition: 0.3s;
+    display: flex;
+    white-space: nowrap;
+}
+
+nav a:hover {
+    background-color: var(--color-primary);
+}
+
+nav a i {
+    margin-right: 8px;
+}
+
+/*Body*/
+
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
 }
 
-header {
-    background-color: var(--color-secondary);
-    color: var(--color-text-white);
-    padding: 10px;
-    text-align: center;
-}
-
-header nav a {
-    color: var(--color-text-white);
-    margin: 0 10px;
+a {
     text-decoration: none;
+    color: var(--color-text-white);
 }
 
 main {
-    padding: 20px;
+    padding: 50px 30px;
     background-color: var(--color-primary);
     color: var(--color-text-white);
     height: 1000vh;
 }
 
-footer {
-    background-color: var(--color-secondary);
-    color: var(--color-text-white);
-    text-align: center;
-    padding: 10px;
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#addBookButton {
+    background-color: var(--color-accent);
+}
+
+.dropdown-content {
+    display: none;
     position: absolute;
-    bottom: 0;
-    width: 100%;
+    flex-direction: column;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    right: 0%;
+}
+
+.dropdown-content.show {
+    display: flex;
 }
 
 form {
@@ -186,19 +266,6 @@ tr:nth-child(even) {
 #bookForm > *:not(.combined) {
     margin-bottom: 1em; /* Add space below each non-combined input */
 }
-
-.dropdown-content {
-    display: none;
-    position: absolute;
-    flex-direction: column;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional: Adds a shadow */
-    z-index: 1;
-}
-
-.dropdown-content.show {
-    display: flex;
-}
-
 
 .modal.show {
     display: block;
