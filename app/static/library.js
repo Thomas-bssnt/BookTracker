@@ -17,15 +17,10 @@ const manualAddButton = document.getElementById('manualAddButton');
 const isbnAddButton = document.getElementById('isbnAddButton');
 const editBookButton = document.getElementById('editBookButton');
 const deleteBookButton = document.getElementById('deleteBookButton');
-const closeModalButton = bookModal.querySelector('.close');
 const isbnModal = document.getElementById("isbnModal");
 const addBookDropdown = document.getElementById("addBookDropdown");
 
 // Utility functions
-
-const toggleModal = (show) => {
-    bookModal.style.display = show ? 'block' : 'none';
-};
 
 const toggleModalMode = (mode) => {
     const modes = ['viewMode', 'formMode'];
@@ -108,7 +103,7 @@ const handleRowClick = async (row) => {
     const bookId = row.dataset.bookId;
     try {
         const data = await fetchBookData(bookId);
-        toggleModal(true);
+        bookModal.classList.add('show');
         toggleModalMode('viewMode');
         updateModalWithBookData(data);
     } catch (error) {
@@ -124,7 +119,7 @@ const handleSubmit = async (event) => {
     try {
         const data = await submitBookForm(formData, mode, bookId);
         if (data.message) {
-            toggleModal(false);
+            bookModal.classList.remove('show');
             location.reload();
         } else {
             console.warn(`Error in ${mode} mode:`, data.error);
@@ -143,7 +138,7 @@ const handleSubmitIsbnForm = async (event) => {
     try {
         const data = await submitIsbnForm(isbn);
         console.log(data);
-        toggleModal(true);
+        bookModal.classList.add('show');
         bookForm.reset();
         updateModalWithBookData(data);
         toggleModalMode('formMode');
@@ -170,7 +165,7 @@ const handleDelete = async () => {
     try {
         const bookId = deleteBookButton.dataset.bookId;
         await deleteBook(bookId);
-        toggleModal(false);
+        bookModal.classList.remove('show');
         location.reload();
     } catch (error) {
         console.error('An unexpected error occurred while deleting the book:', error);
@@ -239,28 +234,53 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     manualAddButton.addEventListener('click', () => {
-        toggleModal(true);
+        bookModal.classList.add('show');
         bookForm.reset();
         toggleModalMode('formMode');
         document.getElementById('formModeInput').value = 'add';
-        addBookDropdown.classList.toggle("show");
+        addBookDropdown.classList.remove("show");
     });
 
-    closeModalButton.addEventListener('click', () => toggleModal(false));
-
     window.onclick = (event) => {
-        if (event.target === bookModal) {
-            toggleModal(false);
-        }
+        modals.forEach(modal => {
+            if (event.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
     };
 
-    addBookButton.addEventListener("click", () => {
+    addBookButton.addEventListener("click", (event) => {
+        event.stopPropagation();
         addBookDropdown.classList.toggle("show");
     });
 
     isbnAddButton.addEventListener('click', (event) => {
         event.stopPropagation();
-        isbnModal.classList.toggle('show');
-        addBookDropdown.classList.toggle("show");
+        isbnModal.classList.add('show');
+        addBookDropdown.classList.remove("show");
+    });
+
+    document.addEventListener("click", (event) => {
+        if (!addBookDropdown.contains(event.target) && !addBookButton.contains(event.target)) {
+            addBookDropdown.classList.remove("show");
+        }
+    });
+
+    const modals = document.querySelectorAll('.modal'); // Select all modals
+    modals.forEach(modal => {
+        const closeButton = document.createElement('span');
+        closeButton.classList.add('close');
+        closeButton.innerHTML = '&times;';
+
+        // Add click event to close the modal
+        closeButton.addEventListener('click', () => {
+            modal.classList.remove('show')
+        });
+
+        // Append the close button to the modal content
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.prepend(closeButton);
+        }
     });
 });
