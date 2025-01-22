@@ -386,6 +386,14 @@ class Book:
 
                 authors = book_info.get("authors", [""])
                 author = authors[0].split(" ")
+                author_first = " ".join(author[:-1])
+                author_last = author[-1]
+
+                year = book_info.get("publishedDate", None)
+                if year:
+                    year = int(year[:4])
+                else:
+                    year = None
 
                 industry_identifiers = book_info.get("industryIdentifiers", [])
                 for identifier in industry_identifiers:
@@ -397,11 +405,11 @@ class Book:
 
                 return cls(
                     title=book_info.get("title", ""),
-                    author_last=" ".join(author[:-1]),
-                    author_first=author[-1],
+                    author_last=author_last,
+                    author_first=author_first,
                     series=None,
                     volume=None,
-                    year=book_info.get("publishedDate", None),
+                    year=year,
                     language=book_info.get("language", None),
                     genre=None,
                     written_form=None,
