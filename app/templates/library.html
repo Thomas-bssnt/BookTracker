@@ -17,6 +17,76 @@
     </div>
 </div>
 
+<!--<div id="scanner-container">-->
+<!--    <video id="scanner" style="width: 100%; height: auto;"></video>-->
+<!--</div>-->
+<!--<form id="book-form">-->
+<!--    <label for="isbn">Scanned ISBN:</label>-->
+<!--    <input type="text" id="isbn" name="isbn" readonly>-->
+<!--    <button type="button" id="lookup-button">Look Up Book</button>-->
+<!--</form>-->
+
+<!--<script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>-->
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', () => {-->
+<!--        // const scannerContainer = document.getElementById('scanner');-->
+<!--        const isbnInput = document.getElementById('isbn');-->
+<!--        const lookupButton = document.getElementById('lookup-button');-->
+
+<!--        // console.log("QuaggaJS initialized");-->
+<!--        Quagga.init({-->
+<!--            inputStream: {-->
+<!--                name: "Live",-->
+<!--                type: "LiveStream",-->
+<!--                target: document.getElementById("scanner"),-->
+<!--            },-->
+<!--            decoder: {-->
+<!--                readers: ["ean_reader"] // Support for EAN barcodes (ISBN is an EAN-13 barcode)-->
+<!--            }-->
+<!--        }, (err) => {-->
+<!--            if (err) {-->
+<!--                console.error(err);-->
+<!--                alert("Failed to initialize scanner. Please check your camera permissions.");-->
+<!--                return;-->
+<!--            } else {-->
+<!--                console.log("QuaggaJS initialized");-->
+<!--            }-->
+<!--            Quagga.start();-->
+<!--        });-->
+
+<!--        Quagga.onDetected((data) => {-->
+<!--            const code = data.codeResult.code;-->
+<!--            isbnInput.value = code;-->
+<!--            Quagga.stop(); // Stop scanning after detecting a barcode-->
+<!--            alert(`Scanned ISBN: ${code}`);-->
+<!--        });-->
+
+<!--        lookupButton.addEventListener('click', () => {-->
+<!--            const isbn = isbnInput.value;-->
+<!--            if (!isbn) {-->
+<!--                alert("Please scan a barcode first.");-->
+<!--                return;-->
+<!--            }-->
+<!--            // Send ISBN to the server for lookup-->
+<!--            fetch('/lookup', {-->
+<!--                method: 'POST',-->
+<!--                headers: {'Content-Type': 'application/json'},-->
+<!--                body: JSON.stringify({isbn})-->
+<!--            })-->
+<!--                .then(response => response.json())-->
+<!--                .then(data => {-->
+<!--                    if (data.error) {-->
+<!--                        alert("Book not found.");-->
+<!--                    } else {-->
+<!--                        alert(`Book Found: ${data.title}`);-->
+<!--                        // You can populate additional fields in the form with data-->
+<!--                    }-->
+<!--                })-->
+<!--                .catch(err => console.error(err));-->
+<!--        });-->
+<!--    });-->
+<!--</script>-->
+
 <div class="table-container">
     <table class="book-table">
         <thead>
@@ -53,105 +123,103 @@
     </table>
 </div>
 
-<div id="bookModal" class="modal">
+<div id="viewBookModal" class="modal">
     <div class="modal-content">
-        <!--        <span class="close">&times;</span>-->
+        <p><strong>Titre :</strong> <span id="viewMode-title"></span></p>
+        <p><strong>Auteur :</strong> <span id="viewMode-author_first"></span>
+            <span id="viewMode-author_last"></span></p>
+        <p><strong>Série :</strong> <span id="viewMode-series"></span> <span id="viewMode-volume"></span></p>
 
-        <div id="viewMode">
-            <p><strong>Titre :</strong> <span id="viewMode-title"></span></p>
-            <p><strong>Auteur :</strong> <span id="viewMode-author_first"></span>
-                <span id="viewMode-author_last"></span></p>
-            <p><strong>Série :</strong> <span id="viewMode-series"></span> <span id="viewMode-volume"></span></p>
+        <p><strong>Année :</strong> <span id="viewMode-year"></span></p>
+        <p><strong>Langue :</strong> <span id="viewMode-language"></span></p>
+        <p><strong>Genre :</strong> <span id="viewMode-genre"></span></p>
+        <p><strong>Forme :</strong> <span id="viewMode-written_form"></span></p>
+        <p><strong>Éditeur :</strong> <span id="viewMode-publisher"></span></p>
+        <p><strong>Collection :</strong> <span id="viewMode-collection"></span></p>
+        <p><strong>ISBN :</strong> <span id="viewMode-isbn"></span></p>
 
-            <p><strong>Année :</strong> <span id="viewMode-year"></span></p>
-            <p><strong>Langue :</strong> <span id="viewMode-language"></span></p>
-            <p><strong>Genre :</strong> <span id="viewMode-genre"></span></p>
-            <p><strong>Forme :</strong> <span id="viewMode-written_form"></span></p>
-            <p><strong>Éditeur :</strong> <span id="viewMode-publisher"></span></p>
-            <p><strong>Collection :</strong> <span id="viewMode-collection"></span></p>
-            <p><strong>ISBN :</strong> <span id="viewMode-isbn"></span></p>
+        <button id="editBookButton" class="icon">
+            <i class="fa-solid fa-pen-to-square"></i>
+        </button>
 
-            <button id="editBookButton" class="icon">
-                <i class="fa-solid fa-pen-to-square"></i>
+        <button id="deleteBookButton" class="icon">
+            <i class="fa-solid fa-trash"></i>
+        </button>
+    </div>
+</div>
+
+<div id="addEditBookModal" class="modal">
+    <div class="modal-content">
+        <form id="bookForm">
+            <input type="hidden" id="formModeInput" value="add"> <!-- TODO: change that??? -->
+
+            <div>
+                <label for="formMode-title">Titre :</label>
+                <input type="text" id="formMode-title" name="title" required>
+            </div>
+
+            <div class="combined">
+                <div>
+                    <label for="formMode-author_first">Auteur (Prénom) :</label>
+                    <input type="text" id="formMode-author_first" name="author_first">
+                </div>
+                <div>
+                    <label for="formMode-author_last">Auteur (Nom) :</label>
+                    <input type="text" id="formMode-author_last" name="author_last" required>
+                </div>
+            </div>
+
+            <div class="combined">
+                <div>
+                    <label for="formMode-series">Série :</label>
+                    <input type="text" id="formMode-series" name="series">
+                </div>
+                <div>
+                    <label for="formMode-volume">Numéro :</label>
+                    <input type="text" id="formMode-volume" name="volume">
+                </div>
+            </div>
+
+            <div>
+                <label for="formMode-year">Année :</label>
+                <input type="text" id="formMode-year" name="year">
+            </div>
+
+            <div>
+                <label for="formMode-language">Langue :</label>
+                <input type="text" id="formMode-language" name="language">
+            </div>
+
+            <div>
+                <label for="formMode-genre">Genre :</label>
+                <input type="text" id="formMode-genre" name="genre">
+            </div>
+
+            <div>
+                <label for="formMode-written_form">Forme :</label>
+                <input type="text" id="formMode-written_form" name="written_form">
+            </div>
+
+            <div class="combined">
+                <div>
+                    <label for="formMode-publisher">Éditeur :</label>
+                    <input type="text" id="formMode-publisher" name="publisher">
+                </div>
+                <div>
+                    <label for="formMode-collection">Collection :</label>
+                    <input type="text" id="formMode-collection" name="collection">
+                </div>
+            </div>
+
+            <div>
+                <label for="formMode-isbn">ISBN :</label>
+                <input type="text" id="formMode-isbn" name="isbn">
+            </div>
+
+            <button type="submit" class="icon">
+                <i class="fa-solid fa-check"></i>
             </button>
-
-            <button id="deleteBookButton" class="icon">
-                <i class="fa-solid fa-trash"></i>
-            </button>
-        </div>
-
-        <div id="formMode">
-            <form id="bookForm">
-                <input type="hidden" id="formModeInput" value="add">
-
-                <div>
-                    <label for="formMode-title">Titre :</label>
-                    <input type="text" id="formMode-title" name="title" required>
-                </div>
-
-                <div class="combined">
-                    <div>
-                        <label for="formMode-author_first">Auteur (Prénom) :</label>
-                        <input type="text" id="formMode-author_first" name="author_first">
-                    </div>
-                    <div>
-                        <label for="formMode-author_last">Auteur (Nom) :</label>
-                        <input type="text" id="formMode-author_last" name="author_last" required>
-                    </div>
-                </div>
-
-                <div class="combined">
-                    <div>
-                        <label for="formMode-series">Série :</label>
-                        <input type="text" id="formMode-series" name="series">
-                    </div>
-                    <div>
-                        <label for="formMode-volume">Numéro :</label>
-                        <input type="text" id="formMode-volume" name="volume">
-                    </div>
-                </div>
-
-                <div>
-                    <label for="formMode-year">Année :</label>
-                    <input type="text" id="formMode-year" name="year">
-                </div>
-
-                <div>
-                    <label for="formMode-language">Langue :</label>
-                    <input type="text" id="formMode-language" name="language">
-                </div>
-
-                <div>
-                    <label for="formMode-genre">Genre :</label>
-                    <input type="text" id="formMode-genre" name="genre">
-                </div>
-
-                <div>
-                    <label for="formMode-written_form">Forme :</label>
-                    <input type="text" id="formMode-written_form" name="written_form">
-                </div>
-
-                <div class="combined">
-                    <div>
-                        <label for="formMode-publisher">Éditeur :</label>
-                        <input type="text" id="formMode-publisher" name="publisher">
-                    </div>
-                    <div>
-                        <label for="formMode-collection">Collection :</label>
-                        <input type="text" id="formMode-collection" name="collection">
-                    </div>
-                </div>
-
-                <div>
-                    <label for="formMode-isbn">ISBN :</label>
-                    <input type="text" id="formMode-isbn" name="isbn">
-                </div>
-
-                <button type="submit" class="icon" id="formSubmitButton">
-                    <i class="fa-solid fa-check"></i>
-                </button>
-            </form>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -160,7 +228,7 @@
         <form id="isbnForm">
             <label for="isbnForm-isbn">ISBN :</label>
             <input type="text" id="isbnForm-isbn" name="isbn" required>
-            <button type="submit" class="icon" id="isbnFormSubmitButton">
+            <button type="submit" class="icon">
                 <i class="fa-solid fa-check"></i>
             </button>
         </form>
