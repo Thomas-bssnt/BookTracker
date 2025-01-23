@@ -1,4 +1,4 @@
-// Constants
+// API_ENDPOINTS
 
 const API_ENDPOINTS = {
     CREATE_BOOK: '/api/books',
@@ -29,7 +29,7 @@ class DOMElements {
     static isbnAddButton = document.getElementById('isbnAddButton');
 }
 
-// apiService
+// APIService
 
 class APIService {
     static async fetchBookByID(bookId) {
@@ -84,28 +84,137 @@ class APIService {
     }
 }
 
-// Utility functions
+// UIUtils
 
-const updateModalWithBookData = (data) => {
-    const fields = ['title', 'author_last', 'author_first', 'series', 'volume', 'year', 'language', 'genre', 'written_form', 'publisher', 'collection', 'isbn'];
-    fields.forEach(field => {
-        document.getElementById(`viewMode-${field}`).textContent = data[field];
-        document.getElementById(`formMode-${field}`).value = data[field];
-    });
-    DOMElements.deleteBookButton.dataset.bookId = data['id'];
-    DOMElements.editBookButton.dataset.bookId = data['id'];
-    DOMElements.bookForm.dataset.bookId = data['id'];
-};
+class UIUtils {
+
+    static openModal(element) {
+        element.classList.add('show');
+    }
+
+    static closeModal(element) {
+        element.classList.remove('show');
+    }
+
+    static toggleModal(element) {
+        element.classList.toggle('show');
+    }
+
+    static updateModalWithBookData(data) {
+        // TODO: split this function in two?
+
+        const fields = ['title', 'author_last', 'author_first', 'series', 'volume', 'year', 'language', 'genre', 'written_form', 'publisher', 'collection', 'isbn'];
+
+        fields.forEach(field => {
+            document.getElementById(`viewMode-${field}`).textContent = data[field];
+            document.getElementById(`formMode-${field}`).value = data[field];
+        });
+
+        DOMElements.deleteBookButton.dataset.bookId = data.id;
+        DOMElements.editBookButton.dataset.bookId = data.id;
+        DOMElements.bookForm.dataset.bookId = data.id;
+    }
+
+    static getStatusIcon(status) {
+        switch (status) {
+            case 'read':
+                return '<i class="fa-solid fa-check"></i>';
+            case 'reading':
+                return '<i class="fa-solid fa-minus"></i>';
+            default:
+                return '<i class="fa-solid fa-xmark"></i>';
+        }
+    }
+
+    static createBookRow(book, existingStatus = null) {
+        const row = document.createElement('tr');
+        row.classList.add('book-row');
+        row.dataset.bookId = book.id;
+        row.dataset.authorLast = book["author_last"];
+        row.dataset.authorFirst = book["author_first"];
+        row.dataset.year = book.year;
+
+        const status = existingStatus || 'not_read';
+        const statusIcon = this.getStatusIcon(status);
+
+        row.innerHTML = `
+            <td>${book.title}</td>
+            <td>${book["author_first"]} ${book["author_last"]}</td>
+            <td>${book["series"] ? `${book["series"]} #${book.volume}` : ''}</td>
+            <td>${book.year || ''}</td>
+            <td>
+                <button id="bookStatusButton" class="icon" data-current-status="${book.status}">
+                    ${statusIcon}
+                </button>
+            </td>
+        `;
+
+        // TODO: Find a way to move this event listener with the others
+        row.addEventListener('click', () => handleRowClick(row));
+        const statusButton = row.querySelector('#bookStatusButton');
+        statusButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            handleChangeBookStatus(statusButton);
+        });
+
+        return row;
+    }
+
+    static sortCriterion(a, b) {
+        const getComparisonData = (row) => ({
+            lastName: row.dataset.authorLast,
+            firstName: row.dataset.authorFirst,
+            year: row.dataset.year || ''
+        });
+
+        const aData = getComparisonData(a);
+        const bData = getComparisonData(b);
+
+        if (aData.lastName.localeCompare(bData.lastName) !== 0) {
+            return aData.lastName.localeCompare(bData.lastName);
+        }
+        if (aData.firstName.localeCompare(bData.firstName) !== 0) {
+            return aData.firstName.localeCompare(bData.firstName);
+        }
+        return aData.year.localeCompare(bData.year);
+    }
+
+
+    static updateTableWithBook(book, mode = 'add') {
+        const tbody = document.querySelector('.book-table tbody');
+        const existingRow = document.querySelector(`tr[data-book-id="${book.id}"]`);
+
+        if (mode === 'add' || mode === 'edit') {
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            if (mode === 'edit' && existingRow) {
+                const existingStatusButton = existingRow.querySelector('#bookStatusButton');
+                book.status = existingStatusButton.dataset.currentStatus;
+                rows.splice(rows.indexOf(existingRow), 1);
+            }
+
+            const newRow = UIUtils.createBookRow(book, book.status);
+            rows.push(newRow);
+
+            rows.sort(this.sortCriterion);
+
+            tbody.innerHTML = '';
+            rows.forEach(row => tbody.appendChild(row));
+        } else if (mode === 'delete' && existingRow) {
+            existingRow.remove();
+        }
+    }
+}
 
 // Event handlers
 
 const handleRowClick = async (row) => {
     const bookId = row.dataset.bookId;
     try {
-        openVisibility(DOMElements.viewBookModal);
+        UIUtils.openModal(DOMElements.viewBookModal);
 
         const data = await APIService.fetchBookByID(bookId);
-        updateModalWithBookData(data.book);
+        UIUtils.updateModalWithBookData(data["book"]);
     } catch (error) {
         console.error('Error fetching book data:', error);
     }
@@ -119,8 +228,8 @@ const handleSubmit = async (event) => {
     try {
         const data = await APIService.submitEditBookForm(formData, mode, bookId);
         if (data.message) {
-            closeVisibility(DOMElements.addEditBookModal);
-            updateTableWithBook(data.book, mode);
+            UIUtils.closeModal(DOMElements.addEditBookModal);
+            UIUtils.updateTableWithBook(data["book"], mode);
         } else {
             console.warn(`Error in ${mode} mode:`, data.error);
         }
@@ -137,10 +246,10 @@ const handleSubmitIsbnForm = async (event) => {
 
     try {
         const data = await APIService.fetchBookByISBN(isbn);
-        closeVisibility(DOMElements.isbnModal);
-        openVisibility(DOMElements.addEditBookModal);
+        UIUtils.closeModal(DOMElements.isbnModal);
+        UIUtils.openModal(DOMElements.addEditBookModal);
         DOMElements.bookForm.reset();
-        updateModalWithBookData(data.book);
+        UIUtils.updateModalWithBookData(data["book"]);
         document.getElementById('formModeInput').value = 'add';
     } catch (error) {
         console.error('An unexpected error occurred:', error);
@@ -153,8 +262,8 @@ const handleDelete = async () => {
         const bookId = DOMElements.deleteBookButton.dataset.bookId;
         await APIService.deleteBook(bookId);
 
-        closeVisibility(DOMElements.viewBookModal);
-        updateTableWithBook({id: bookId}, 'delete');
+        UIUtils.closeModal(DOMElements.viewBookModal);
+        UIUtils.updateTableWithBook({id: bookId}, 'delete');
     } catch (error) {
         console.error('An unexpected error occurred while deleting the book:', error);
     }
@@ -198,115 +307,6 @@ const handleChangeBookStatus = async (button) => {
     }
 };
 
-// Table creation
-
-const createBookRow = (book, existingStatus = null) => {
-    const row = document.createElement('tr');
-    row.classList.add('book-row');
-    row.dataset.bookId = book.id;
-    row.dataset.authorLast = book.author_last;
-    row.dataset.authorFirst = book.author_first;
-    row.dataset.year = book.year;
-
-    const status = existingStatus || 'not_read';
-    let statusIcon;
-    switch (status) {
-        case 'read':
-            statusIcon = '<i class="fa-solid fa-check"></i>';
-            break;
-        case 'reading':
-            statusIcon = '<i class="fa-solid fa-minus"></i>';
-            break;
-        default:
-            statusIcon = '<i class="fa-solid fa-xmark"></i>';
-    }
-
-    row.innerHTML = `
-        <td>${book.title}</td>
-        <td>${book.author_first} ${book.author_last}</td>
-        <td>${book.series ? `${book.series} #${book.volume}` : ''}</td>
-        <td>${book.year || ''}</td>
-        <td>
-            <button id="bookStatusButton" class="icon" data-current-status="${book.status}">
-                ${statusIcon}
-            </button>
-        </td>
-    `;
-
-    // Add event listeners to the new row
-    row.addEventListener('click', () => handleRowClick(row));
-    const statusButton = row.querySelector('#bookStatusButton');
-    statusButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-        handleChangeBookStatus(statusButton);
-    });
-    return row;
-};
-
-function sortCriterion() {
-    return (a, b) => {
-        const getComparisonData = (row) => ({
-            lastName: row.dataset.authorLast,
-            firstName: row.dataset.authorFirst,
-            year: row.dataset.year || ''
-        });
-
-        const aData = getComparisonData(a);
-        const bData = getComparisonData(b);
-
-        if (aData.lastName.localeCompare(bData.lastName) !== 0) {
-            return aData.lastName.localeCompare(bData.lastName);
-        }
-        if (aData.firstName.localeCompare(bData.firstName) !== 0) {
-            return aData.firstName.localeCompare(bData.firstName);
-        }
-        return aData.year.localeCompare(bData.year);
-    };
-}
-
-const updateTableWithBook = (book, mode = 'add') => {
-    const tbody = document.querySelector('.book-table tbody');
-    const existingRow = document.querySelector(`tr[data-book-id="${book.id}"]`);
-
-
-    if (mode === 'add' || mode === 'edit') {
-        const rows = Array.from(tbody.querySelectorAll('tr'));
-
-        // If editing, remove the existing row first and keep status
-        if (mode === 'edit' && existingRow) {
-            const existingStatusButton = existingRow.querySelector('#bookStatusButton');
-            book.status = existingStatusButton.dataset.currentStatus;
-            rows.splice(rows.indexOf(existingRow), 1);
-        }
-
-        const newRow = createBookRow(book, book.status);
-        rows.push(newRow);
-
-        // Sort rows
-        rows.sort(sortCriterion());
-
-        // Clear and repopulate tbody
-        tbody.innerHTML = '';
-        rows.forEach(row => tbody.appendChild(row));
-    } else if (mode === 'delete' && existingRow) {
-        existingRow.remove();
-    }
-};
-
-// Modals and Dropdowns Visibility Control
-
-function openVisibility(element) {
-    element.classList.add("show");
-}
-
-function closeVisibility(element) {
-    element.classList.remove("show");
-}
-
-function toggleVisibility(element) {
-    element.classList.toggle("show");
-}
-
 // Event listeners
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -324,25 +324,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dropdown Logic
     function initializeDropdownListeners() {
         DOMElements.addBookButton.addEventListener("click", () => {
-            toggleVisibility(DOMElements.addBookDropdown);
+            UIUtils.toggleModal(DOMElements.addBookDropdown);
         });
 
         document.addEventListener("click", (event) => {
             if (!DOMElements.addBookDropdown.contains(event.target) && !DOMElements.addBookButton.contains(event.target)) {
-                closeVisibility(DOMElements.addBookDropdown);
+                UIUtils.closeModal(DOMElements.addBookDropdown);
             }
         });
 
         DOMElements.manualAddButton.addEventListener('click', () => {
-            closeVisibility(DOMElements.addBookDropdown);
-            openVisibility(DOMElements.addEditBookModal)
+            UIUtils.closeModal(DOMElements.addBookDropdown);
+            UIUtils.openModal(DOMElements.addEditBookModal)
             DOMElements.bookForm.reset();
             document.getElementById('formModeInput').value = 'add';
         });
 
         DOMElements.isbnAddButton.addEventListener('click', () => {
-            closeVisibility(DOMElements.addBookDropdown);
-            openVisibility(DOMElements.isbnModal);
+            UIUtils.closeModal(DOMElements.addBookDropdown);
+            UIUtils.openModal(DOMElements.isbnModal);
         });
     }
 
@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Close modal when clicking outside
             modal.addEventListener('click', (event) => {
                 if (event.target === modal) {
-                    closeVisibility(modal);
+                    UIUtils.closeModal(modal);
                 }
             });
         });
@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
         closeButton.classList.add('close');
         closeButton.innerHTML = '<i class="fa-solid fa-xmark"></i>';
         closeButton.addEventListener('click', () => {
-            closeVisibility(modal);
+            UIUtils.closeModal(modal);
         });
         return closeButton;
     }
@@ -402,8 +402,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Other
 
     DOMElements.editBookButton.addEventListener('click', () => {
-        closeVisibility(DOMElements.viewBookModal);
-        openVisibility(DOMElements.addEditBookModal);
+        UIUtils.closeModal(DOMElements.viewBookModal);
+        UIUtils.openModal(DOMElements.addEditBookModal);
         document.getElementById('formModeInput').value = 'edit';
     });
 
@@ -411,10 +411,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = document.querySelector('.book-table tbody');
     const books = JSON.parse(document.getElementById('books-data').textContent);
 
-    const rows = books.map(book => createBookRow(book, book.status));
+    const rows = books.map(book => UIUtils.createBookRow(book, book.status));
 
     // Sort rows
-    rows.sort(sortCriterion());
+    rows.sort(UIUtils.sortCriterion);
 
     // Clear and repopulate tbody
     tbody.innerHTML = '';
