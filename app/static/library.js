@@ -201,7 +201,8 @@ class EventHandlers {
 
     static async handleSubmit(event) {
         event.preventDefault();
-        const formData = new URLSearchParams(new FormData(event.target));
+        const formData = new URLSearchParams([...new FormData(event.target)]);
+
         const mode = document.getElementById('formModeInput').value;
         const bookId = DOMElements.bookForm.dataset.bookId;
         try {
@@ -318,19 +319,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Table Row Logic
     function initializeRowListeners() {
         document.querySelectorAll('.book-table tbody').forEach(tbody => {
-            tbody.addEventListener('click', (event) => {
+            tbody.addEventListener('click', async (event) => {
                 const row = event.target.closest('.book-row');
                 if (row) {
                     // Handle row click
                     if (!event.target.closest('#bookStatusButton')) {
-                        EventHandlers.handleRowClick(row);
+                        await EventHandlers.handleRowClick(row);
                     }
                 }
 
                 const statusButton = event.target.closest('#bookStatusButton');
                 if (statusButton) {
                     event.stopPropagation();
-                    EventHandlers.handleChangeBookStatus(statusButton);
+                    await EventHandlers.handleChangeBookStatus(statusButton);
                 }
             });
         });
