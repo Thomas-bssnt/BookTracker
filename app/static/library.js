@@ -221,13 +221,13 @@ class EventHandlers {
         event.preventDefault();
         const isbnInput = document.getElementById('isbnForm-isbn');
         const isbn = isbnInput.value.trim();
+        DOMElements.isbnForm.reset();
 
         try {
             const data = await APIService.fetchBookByISBN(isbn);
             UIUtils.closeModal(DOMElements.isbnModal);
+            UIUtils.updateModalWithBookData(data["book"]);
             UIUtils.openModal(DOMElements.addEditBookModal);
-            DOMElements.bookForm.reset();
-            UIUtils.updateModalWithBookData(data);
             document.getElementById('formModeInput').value = 'add';
         } catch (error) {
             console.error('An unexpected error occurred:', error);
