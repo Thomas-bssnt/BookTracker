@@ -29,6 +29,61 @@ class DOMElements {
     static isbnAddButton = document.getElementById('isbnAddButton');
 }
 
+// apiService
+
+class APIService {
+    static async fetchBookByID(bookId) {
+        const response = await fetch(API_ENDPOINTS.READ_BOOK(bookId), {
+            method: 'GET'
+        });
+        return this.handleResponse(response);
+    }
+
+    static async submitEditBookForm(formData, mode, bookId) {
+        const url = mode === 'add' ? API_ENDPOINTS.CREATE_BOOK : API_ENDPOINTS.UPDATE_BOOK(bookId);
+        const method = mode === 'add' ? 'POST' : 'PUT';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: formData,
+        });
+        return this.handleResponse(response);
+    }
+
+    static async deleteBook(bookId) {
+        const response = await fetch(API_ENDPOINTS.DELETE_BOOK(bookId), {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        });
+        return this.handleResponse(response);
+    }
+
+    static async editStatus(bookId, status) {
+        const response = await fetch(API_ENDPOINTS.UPDATE_BOOK_STATUS(bookId), {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `status=${status}`,
+        });
+        return this.handleResponse(response);
+    }
+
+    static async fetchBookByISBN(isbn) {
+        const response = await fetch(API_ENDPOINTS.READ_BOOK_ISBN(isbn), {
+            method: 'GET',
+        });
+        return this.handleResponse(response);
+    }
+
+    static async handleResponse(response) {
+        const responseData = await response.json();
+        if (responseData.status === 'fail' || responseData.status === 'error') {
+            throw new Error(responseData.data.error || responseData.message);
+        }
+        return responseData.data;
+    }
+}
+
 // Utility functions
 
 const updateModalWithBookData = (data) => {
@@ -42,63 +97,6 @@ const updateModalWithBookData = (data) => {
     DOMElements.bookForm.dataset.bookId = data['id'];
 };
 
-// API calls
-
-const fetchBookData = async (bookId) => {
-    const response = await fetch(API_ENDPOINTS.READ_BOOK(bookId), {
-        method: 'GET',
-    });
-
-    const responseData = await response.json();
-    if (responseData.status === 'fail' || responseData.status === 'error') {
-        throw new Error(responseData.data.error || responseData.message);
-    }
-
-    return responseData.data.book;
-};
-
-const submitEditBookForm = async (formData, mode, bookId) => {
-    const url = mode === 'add' ? API_ENDPOINTS.CREATE_BOOK : API_ENDPOINTS.UPDATE_BOOK(bookId);
-    const method = mode === 'add' ? 'POST' : 'PUT';
-    const response = await fetch(url, {
-        method: method,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: formData,
-    });
-
-    const responseData = await response.json();
-    if (responseData.status === 'fail' || responseData.status === 'error') {
-        throw new Error(responseData.data.error || responseData.message);
-    }
-
-    return responseData.data;
-};
-
-const deleteBook = async (bookId) => {
-    const response = await fetch(API_ENDPOINTS.DELETE_BOOK(bookId), {
-        method: 'DELETE',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    });
-
-    const responseData = await response.json();
-    if (responseData.status === 'fail' || responseData.status === 'error') {
-        throw new Error(responseData.data.error || responseData.message);
-    }
-};
-
-const editStatus = async (bookId, status) => {
-    const response = await fetch(API_ENDPOINTS.UPDATE_BOOK_STATUS(bookId), {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `status=${status}`,
-    });
-
-    const responseData = await response.json();
-    if (responseData.status === 'fail' || responseData.status === 'error') {
-        throw new Error(responseData.data.error || responseData.message);
-    }
-};
-
 // Event handlers
 
 const handleRowClick = async (row) => {
@@ -106,8 +104,8 @@ const handleRowClick = async (row) => {
     try {
         openVisibility(DOMElements.viewBookModal);
 
-        const data = await fetchBookData(bookId);
-        updateModalWithBookData(data);
+        const data = await APIService.fetchBookByID(bookId);
+        updateModalWithBookData(data.book);
     } catch (error) {
         console.error('Error fetching book data:', error);
     }
@@ -119,7 +117,7 @@ const handleSubmit = async (event) => {
     const mode = document.getElementById('formModeInput').value;
     const bookId = DOMElements.bookForm.dataset.bookId;
     try {
-        const data = await submitEditBookForm(formData, mode, bookId);
+        const data = await APIService.submitEditBookForm(formData, mode, bookId);
         if (data.message) {
             closeVisibility(DOMElements.addEditBookModal);
             updateTableWithBook(data.book, mode);
@@ -138,27 +136,69 @@ const handleSubmitIsbnForm = async (event) => {
     const isbn = isbnInput.value.trim();
 
     try {
-        const data = await submitIsbnForm(isbn);
+        const data = await APIService.fetchBookByISBN(isbn);
         closeVisibility(DOMElements.isbnModal);
         openVisibility(DOMElements.addEditBookModal);
         DOMElements.bookForm.reset();
-        updateModalWithBookData(data);
+        updateModalWithBookData(data.book);
         document.getElementById('formModeInput').value = 'add';
     } catch (error) {
         console.error('An unexpected error occurred:', error);
     }
 };
 
-const submitIsbnForm = async (isbn) => {
-    const response = await fetch(API_ENDPOINTS.READ_BOOK_ISBN(isbn), {method: "GET",});
+const handleDelete = async () => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) return;
+    try {
+        const bookId = DOMElements.deleteBookButton.dataset.bookId;
+        await APIService.deleteBook(bookId);
 
-    const responseData = await response.json();
-    if (responseData.status === 'fail' || responseData.status === 'error') {
-        throw new Error(responseData.data.error || responseData.message);
+        closeVisibility(DOMElements.viewBookModal);
+        updateTableWithBook({id: bookId}, 'delete');
+    } catch (error) {
+        console.error('An unexpected error occurred while deleting the book:', error);
+    }
+};
+
+const handleChangeBookStatus = async (button) => {
+    const row = button.closest('.book-row');
+    const bookId = row.getAttribute('data-book-id');
+
+    const currentStatus = button.getAttribute('data-current-status');
+
+    let newStatus;
+    switch (currentStatus) {
+        case 'not_read':
+            newStatus = 'reading';
+            break;
+        case 'reading':
+            newStatus = 'read';
+            break;
+        case 'read':
+            newStatus = 'not_read';
+            break;
+        default:
+            newStatus = 'reading';
     }
 
-    return responseData.data.book;
+    try {
+        await APIService.editStatus(bookId, newStatus);
+        button.setAttribute('data-current-status', newStatus);
+
+        // Update the button icon based on the new status
+        if (newStatus === 'read') {
+            button.innerHTML = '<i class="fa-solid fa-check"></i>';
+        } else if (newStatus === 'reading') {
+            button.innerHTML = '<i class="fa-solid fa-minus"></i>';
+        } else {
+            button.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        }
+    } catch (error) {
+        console.error('An unexpected error occurred while changing the book status:', error);
+    }
 };
+
+// Table creation
 
 const createBookRow = (book, existingStatus = null) => {
     const row = document.createElement('tr');
@@ -250,57 +290,6 @@ const updateTableWithBook = (book, mode = 'add') => {
         rows.forEach(row => tbody.appendChild(row));
     } else if (mode === 'delete' && existingRow) {
         existingRow.remove();
-    }
-};
-
-const handleDelete = async () => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) return;
-    try {
-        const bookId = DOMElements.deleteBookButton.dataset.bookId;
-        await deleteBook(bookId);
-
-        closeVisibility(DOMElements.viewBookModal);
-        updateTableWithBook({id: bookId}, 'delete');
-    } catch (error) {
-        console.error('An unexpected error occurred while deleting the book:', error);
-    }
-};
-
-const handleChangeBookStatus = async (button) => {
-    const row = button.closest('.book-row');
-    const bookId = row.getAttribute('data-book-id');
-
-    const currentStatus = button.getAttribute('data-current-status');
-
-    let newStatus;
-    switch (currentStatus) {
-        case 'not_read':
-            newStatus = 'reading';
-            break;
-        case 'reading':
-            newStatus = 'read';
-            break;
-        case 'read':
-            newStatus = 'not_read';
-            break;
-        default:
-            newStatus = 'reading';
-    }
-
-    try {
-        await editStatus(bookId, newStatus);
-        button.setAttribute('data-current-status', newStatus);
-
-        // Update the button icon based on the new status
-        if (newStatus === 'read') {
-            button.innerHTML = '<i class="fa-solid fa-check"></i>';
-        } else if (newStatus === 'reading') {
-            button.innerHTML = '<i class="fa-solid fa-minus"></i>';
-        } else {
-            button.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-        }
-    } catch (error) {
-        console.error('An unexpected error occurred while changing the book status:', error);
     }
 };
 
