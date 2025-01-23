@@ -1,3 +1,5 @@
+// Constants
+
 const API_ENDPOINTS = {
     CREATE_BOOK: '/api/books',
     READ_BOOK: (bookId) => `/api/books/${bookId}`,
@@ -7,15 +9,25 @@ const API_ENDPOINTS = {
     DELETE_BOOK: (bookId) => `/api/books/${bookId}`,
 };
 
-// DOM elements
+// DOMElements
 
-const viewBookModal = document.getElementById('viewBookModal');
-const addEditBookModal = document.getElementById('addEditBookModal');
-const bookForm = document.getElementById('bookForm');
-const isbnForm = document.getElementById('isbnForm');
-const editBookButton = document.getElementById('editBookButton');
-const deleteBookButton = document.getElementById('deleteBookButton');
-const isbnModal = document.getElementById("isbnModal");
+class DOMElements {
+    // viewBookModal
+    static viewBookModal = document.getElementById('viewBookModal');
+    static editBookButton = document.getElementById('editBookButton');
+    static deleteBookButton = document.getElementById('deleteBookButton');
+    // addEditBookModal
+    static addEditBookModal = document.getElementById('addEditBookModal');
+    static bookForm = document.getElementById('bookForm');
+    // isbnModal
+    static isbnModal = document.getElementById('isbnModal');
+    static isbnForm = document.getElementById('isbnForm');
+    // addBookDropdown
+    static addBookDropdown = document.getElementById("addBookDropdown");
+    static addBookButton = document.getElementById('addBookButton');
+    static manualAddButton = document.getElementById('manualAddButton');
+    static isbnAddButton = document.getElementById('isbnAddButton');
+}
 
 // Utility functions
 
@@ -25,9 +37,9 @@ const updateModalWithBookData = (data) => {
         document.getElementById(`viewMode-${field}`).textContent = data[field];
         document.getElementById(`formMode-${field}`).value = data[field];
     });
-    deleteBookButton.dataset.bookId = data['id'];
-    editBookButton.dataset.bookId = data['id'];
-    bookForm.dataset.bookId = data['id'];
+    DOMElements.deleteBookButton.dataset.bookId = data['id'];
+    DOMElements.editBookButton.dataset.bookId = data['id'];
+    DOMElements.bookForm.dataset.bookId = data['id'];
 };
 
 // API calls
@@ -92,7 +104,7 @@ const editStatus = async (bookId, status) => {
 const handleRowClick = async (row) => {
     const bookId = row.dataset.bookId;
     try {
-        openVisibility(viewBookModal);
+        openVisibility(DOMElements.viewBookModal);
 
         const data = await fetchBookData(bookId);
         updateModalWithBookData(data);
@@ -105,11 +117,11 @@ const handleSubmit = async (event) => {
     event.preventDefault();
     const formData = new URLSearchParams(new FormData(event.target));
     const mode = document.getElementById('formModeInput').value;
-    const bookId = bookForm.dataset.bookId;
+    const bookId = DOMElements.bookForm.dataset.bookId;
     try {
         const data = await submitEditBookForm(formData, mode, bookId);
         if (data.message) {
-            closeVisibility(addEditBookModal);
+            closeVisibility(DOMElements.addEditBookModal);
             updateTableWithBook(data.book, mode);
         } else {
             console.warn(`Error in ${mode} mode:`, data.error);
@@ -127,9 +139,9 @@ const handleSubmitIsbnForm = async (event) => {
 
     try {
         const data = await submitIsbnForm(isbn);
-        closeVisibility(isbnModal);
-        openVisibility(addEditBookModal);
-        bookForm.reset();
+        closeVisibility(DOMElements.isbnModal);
+        openVisibility(DOMElements.addEditBookModal);
+        DOMElements.bookForm.reset();
         updateModalWithBookData(data);
         document.getElementById('formModeInput').value = 'add';
     } catch (error) {
@@ -244,10 +256,10 @@ const updateTableWithBook = (book, mode = 'add') => {
 const handleDelete = async () => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) return;
     try {
-        const bookId = deleteBookButton.dataset.bookId;
+        const bookId = DOMElements.deleteBookButton.dataset.bookId;
         await deleteBook(bookId);
 
-        closeVisibility(viewBookModal);
+        closeVisibility(DOMElements.viewBookModal);
         updateTableWithBook({id: bookId}, 'delete');
     } catch (error) {
         console.error('An unexpected error occurred while deleting the book:', error);
@@ -309,12 +321,6 @@ function toggleVisibility(element) {
 // Event listeners
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Dropdown Elements
-    const addBookDropdown = document.getElementById("addBookDropdown");
-    const addBookButton = document.getElementById('addBookButton');
-    const manualAddButton = document.getElementById('manualAddButton');
-    const isbnAddButton = document.getElementById('isbnAddButton');
-
     // Modal Elements
     const modals = document.querySelectorAll('.modal');
 
@@ -328,26 +334,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dropdown Logic
     function initializeDropdownListeners() {
-        addBookButton.addEventListener("click", () => {
-            toggleVisibility(addBookDropdown);
+        DOMElements.addBookButton.addEventListener("click", () => {
+            toggleVisibility(DOMElements.addBookDropdown);
         });
 
         document.addEventListener("click", (event) => {
-            if (!addBookDropdown.contains(event.target) && !addBookButton.contains(event.target)) {
-                closeVisibility(addBookDropdown);
+            if (!DOMElements.addBookDropdown.contains(event.target) && !DOMElements.addBookButton.contains(event.target)) {
+                closeVisibility(DOMElements.addBookDropdown);
             }
         });
 
-        manualAddButton.addEventListener('click', () => {
-            closeVisibility(addBookDropdown);
-            openVisibility(addEditBookModal)
-            bookForm.reset();
+        DOMElements.manualAddButton.addEventListener('click', () => {
+            closeVisibility(DOMElements.addBookDropdown);
+            openVisibility(DOMElements.addEditBookModal)
+            DOMElements.bookForm.reset();
             document.getElementById('formModeInput').value = 'add';
         });
 
-        isbnAddButton.addEventListener('click', () => {
-            closeVisibility(addBookDropdown);
-            openVisibility(isbnModal);
+        DOMElements.isbnAddButton.addEventListener('click', () => {
+            closeVisibility(DOMElements.addBookDropdown);
+            openVisibility(DOMElements.isbnModal);
         });
     }
 
@@ -399,16 +405,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Form Logic
     function initializeFormListeners() {
-        bookForm.addEventListener('submit', handleSubmit);
-        isbnForm.addEventListener('submit', handleSubmitIsbnForm);
-        deleteBookButton.addEventListener('click', handleDelete);
+        DOMElements.bookForm.addEventListener('submit', handleSubmit);
+        DOMElements.isbnForm.addEventListener('submit', handleSubmitIsbnForm);
+        DOMElements.deleteBookButton.addEventListener('click', handleDelete);
     }
 
     // Other
 
-    editBookButton.addEventListener('click', () => {
-        closeVisibility(viewBookModal);
-        openVisibility(addEditBookModal);
+    DOMElements.editBookButton.addEventListener('click', () => {
+        closeVisibility(DOMElements.viewBookModal);
+        openVisibility(DOMElements.addEditBookModal);
         document.getElementById('formModeInput').value = 'edit';
     });
 
