@@ -67,8 +67,15 @@ def create_book() -> Response:
     """Create a new book."""
     try:
         book = Book.from_form(request.form)
-        book.create()
-        return make_response("success", data={"message": "Book created successfully"})
+        book_id = book.create()
+        data = book.to_dict() | {"id": book_id}
+        return make_response(
+            "success",
+            data={
+                "message": "Book created successfully",
+                "book": data,
+            },
+        )
     except Exception as e:
         return make_response(
             "fail", data={"error": str(e)}, code=HTTPStatus.BAD_REQUEST
@@ -144,9 +151,13 @@ def update_book(book_id) -> Response:
     try:
         book = Book.from_form(request.form)
         book.update(book_id)
+        data = book.to_dict() | {"id": book_id}
         return make_response(
             "success",
-            data={"message": "Book updated successfully"},
+            data={
+                "message": "Book updated successfully",
+                "book": data,
+            },
         )
     except Exception as e:
         return make_response(

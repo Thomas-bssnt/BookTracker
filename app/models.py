@@ -432,10 +432,10 @@ class Book:
         """Convert a book instance to dictionary."""
         return asdict(self)
 
-    def create(self) -> None:
+    def create(self) -> int:
         """Save a book in the repository."""
         try:
-            BookRepository.create(self)
+            return BookRepository.create(self)
         except Exception as e:
             raise RuntimeError(f"Failed to save book: {e}")
 

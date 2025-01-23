@@ -110,7 +110,7 @@ const handleSubmit = async (event) => {
         const data = await submitEditBookForm(formData, mode, bookId);
         if (data.message) {
             closeVisibility(addEditBookModal);
-            location.reload(); // TODO: dynamically update the page instead of reloading
+            updateTableWithBook(data.book, mode);
         } else {
             console.warn(`Error in ${mode} mode:`, data.error);
         }
@@ -148,6 +148,98 @@ const submitIsbnForm = async (isbn) => {
     return responseData.data.book;
 };
 
+const createBookRow = (book, existingStatus = null) => {
+    const row = document.createElement('tr');
+    row.classList.add('book-row');
+    row.dataset.bookId = book.id;
+    row.dataset.authorLast = book.author_last;
+    row.dataset.authorFirst = book.author_first;
+    row.dataset.year = book.year;
+
+    const status = existingStatus || 'not_read';
+    let statusIcon;
+    switch (status) {
+        case 'read':
+            statusIcon = '<i class="fa-solid fa-check"></i>';
+            break;
+        case 'reading':
+            statusIcon = '<i class="fa-solid fa-minus"></i>';
+            break;
+        default:
+            statusIcon = '<i class="fa-solid fa-xmark"></i>';
+    }
+
+    row.innerHTML = `
+        <td>${book.title}</td>
+        <td>${book.author_first} ${book.author_last}</td>
+        <td>${book.series ? `${book.series} #${book.volume}` : ''}</td>
+        <td>${book.year || ''}</td>
+        <td>
+            <button id="bookStatusButton" class="icon" data-current-status="${book.status}">
+                ${statusIcon}
+            </button>
+        </td>
+    `;
+
+    // Add event listeners to the new row
+    row.addEventListener('click', () => handleRowClick(row));
+    const statusButton = row.querySelector('#bookStatusButton');
+    statusButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        handleChangeBookStatus(statusButton);
+    });
+    return row;
+};
+
+function sortCriterion() {
+    return (a, b) => {
+        const getComparisonData = (row) => ({
+            lastName: row.dataset.authorLast,
+            firstName: row.dataset.authorFirst,
+            year: row.dataset.year || ''
+        });
+
+        const aData = getComparisonData(a);
+        const bData = getComparisonData(b);
+
+        if (aData.lastName.localeCompare(bData.lastName) !== 0) {
+            return aData.lastName.localeCompare(bData.lastName);
+        }
+        if (aData.firstName.localeCompare(bData.firstName) !== 0) {
+            return aData.firstName.localeCompare(bData.firstName);
+        }
+        return aData.year.localeCompare(bData.year);
+    };
+}
+
+const updateTableWithBook = (book, mode = 'add') => {
+    const tbody = document.querySelector('.book-table tbody');
+    const existingRow = document.querySelector(`tr[data-book-id="${book.id}"]`);
+
+
+    if (mode === 'add' || mode === 'edit') {
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        // If editing, remove the existing row first and keep status
+        if (mode === 'edit' && existingRow) {
+            const existingStatusButton = existingRow.querySelector('#bookStatusButton');
+            book.status = existingStatusButton.dataset.currentStatus;
+            rows.splice(rows.indexOf(existingRow), 1);
+        }
+
+        const newRow = createBookRow(book, book.status);
+        rows.push(newRow);
+
+        // Sort rows
+        rows.sort(sortCriterion());
+
+        // Clear and repopulate tbody
+        tbody.innerHTML = '';
+        rows.forEach(row => tbody.appendChild(row));
+    } else if (mode === 'delete' && existingRow) {
+        existingRow.remove();
+    }
+};
 
 const handleDelete = async () => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) return;
@@ -155,8 +247,8 @@ const handleDelete = async () => {
         const bookId = deleteBookButton.dataset.bookId;
         await deleteBook(bookId);
 
-        closeVisibility(addEditBookModal);
-        location.reload(); // TODO: dynamically update the page instead of reloading
+        closeVisibility(viewBookModal);
+        updateTableWithBook({id: bookId}, 'delete');
     } catch (error) {
         console.error('An unexpected error occurred while deleting the book:', error);
     }
@@ -236,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dropdown Logic
     function initializeDropdownListeners() {
-        addBookButton.addEventListener("click", (event) => {
+        addBookButton.addEventListener("click", () => {
             toggleVisibility(addBookDropdown);
         });
 
@@ -246,14 +338,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        manualAddButton.addEventListener('click', (event) => {
+        manualAddButton.addEventListener('click', () => {
             closeVisibility(addBookDropdown);
             openVisibility(addEditBookModal)
-
+            bookForm.reset();
             document.getElementById('formModeInput').value = 'add';
         });
 
-        isbnAddButton.addEventListener('click', (event) => {
+        isbnAddButton.addEventListener('click', () => {
             closeVisibility(addBookDropdown);
             openVisibility(isbnModal);
         });
@@ -319,4 +411,17 @@ document.addEventListener('DOMContentLoaded', () => {
         openVisibility(addEditBookModal);
         document.getElementById('formModeInput').value = 'edit';
     });
+
+    // Initialize the book table
+    const tbody = document.querySelector('.book-table tbody');
+    const books = JSON.parse(document.getElementById('books-data').textContent);
+
+    const rows = books.map(book => createBookRow(book));
+
+    // Sort rows
+    rows.sort(sortCriterion());
+
+    // Clear and repopulate tbody
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
 });
