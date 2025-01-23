@@ -211,10 +211,9 @@ class UIUtils {
 const handleRowClick = async (row) => {
     const bookId = row.dataset.bookId;
     try {
-        UIUtils.openModal(DOMElements.viewBookModal);
-
         const data = await APIService.fetchBookByID(bookId);
         UIUtils.updateModalWithBookData(data["book"]);
+        UIUtils.openModal(DOMElements.viewBookModal);
     } catch (error) {
         console.error('Error fetching book data:', error);
     }
