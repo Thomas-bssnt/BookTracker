@@ -1,5 +1,3 @@
-// API_ENDPOINTS
-
 const API_ENDPOINTS = {
     CREATE_BOOK: '/api/books',
     READ_BOOK: (bookId) => `/api/books/${bookId}`,
@@ -8,8 +6,6 @@ const API_ENDPOINTS = {
     UPDATE_BOOK_STATUS: (bookId) => `/api/books/${bookId}/status`,
     DELETE_BOOK: (bookId) => `/api/books/${bookId}`,
 };
-
-// DOMElements
 
 class DOMElements {
     // viewBookModal
@@ -28,8 +24,6 @@ class DOMElements {
     static manualAddButton = document.getElementById('manualAddButton');
     static isbnAddButton = document.getElementById('isbnAddButton');
 }
-
-// APIService
 
 class APIService {
     static async fetchBookByID(bookId) {
@@ -83,8 +77,6 @@ class APIService {
         return responseData.data;
     }
 }
-
-// UIUtils
 
 class UIUtils {
 
@@ -153,14 +145,6 @@ class UIUtils {
             </td>
         `;
 
-        // TODO: Find a way to move this event listener with the others
-        row.addEventListener('click', () => handleRowClick(row));
-        const statusButton = row.querySelector('#bookStatusButton');
-        statusButton.addEventListener('click', (event) => {
-            event.stopPropagation();
-            handleChangeBookStatus(statusButton);
-        });
-
         return row;
     }
 
@@ -201,105 +185,96 @@ class UIUtils {
     }
 }
 
-// Event handlers
+class EventHandlers {
+    // TODO: Improve error handling
 
-const handleRowClick = async (row) => {
-    const bookId = row.dataset.bookId;
-    try {
-        const data = await APIService.fetchBookByID(bookId);
-        UIUtils.updateModalWithBookData(data["book"]);
-        UIUtils.openModal(DOMElements.viewBookModal);
-    } catch (error) {
-        console.error('Error fetching book data:', error);
-    }
-};
-
-const handleSubmit = async (event) => {
-    event.preventDefault();
-    const formData = new URLSearchParams(new FormData(event.target));
-    const mode = document.getElementById('formModeInput').value;
-    const bookId = DOMElements.bookForm.dataset.bookId;
-    try {
-        const data = await APIService.submitEditBookForm(formData, mode, bookId);
-        if (data.message) {
-            UIUtils.closeModal(DOMElements.addEditBookModal);
-            UIUtils.updateTableWithBook(data["book"], mode);
-        } else {
-            console.warn(`Error in ${mode} mode:`, data.error);
+    static async handleRowClick(row) {
+        const bookId = row.dataset.bookId;
+        try {
+            const data = await APIService.fetchBookByID(bookId);
+            UIUtils.updateModalWithBookData(data["book"]);
+            UIUtils.openModal(DOMElements.viewBookModal);
+        } catch (error) {
+            console.error('Error fetching book data:', error);
         }
-    } catch (error) {
-        console.error('An unexpected error occurred:', error);
-    }
-};
-
-const handleSubmitIsbnForm = async (event) => {
-
-    event.preventDefault();
-    const isbnInput = document.getElementById("isbnForm-isbn");
-    const isbn = isbnInput.value.trim();
-
-    try {
-        const data = await APIService.fetchBookByISBN(isbn);
-        UIUtils.closeModal(DOMElements.isbnModal);
-        UIUtils.openModal(DOMElements.addEditBookModal);
-        DOMElements.bookForm.reset();
-        UIUtils.updateModalWithBookData(data["book"]);
-        document.getElementById('formModeInput').value = 'add';
-    } catch (error) {
-        console.error('An unexpected error occurred:', error);
-    }
-};
-
-const handleDelete = async () => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) return;
-    try {
-        const bookId = DOMElements.deleteBookButton.dataset.bookId;
-        await APIService.deleteBook(bookId);
-
-        UIUtils.closeModal(DOMElements.viewBookModal);
-        UIUtils.updateTableWithBook({id: bookId}, 'delete');
-    } catch (error) {
-        console.error('An unexpected error occurred while deleting the book:', error);
-    }
-};
-
-const handleChangeBookStatus = async (button) => {
-    const row = button.closest('.book-row');
-    const bookId = row.getAttribute('data-book-id');
-
-    const currentStatus = button.getAttribute('data-current-status');
-
-    let newStatus;
-    switch (currentStatus) {
-        case 'not_read':
-            newStatus = 'reading';
-            break;
-        case 'reading':
-            newStatus = 'read';
-            break;
-        case 'read':
-            newStatus = 'not_read';
-            break;
-        default:
-            newStatus = 'reading';
     }
 
-    try {
-        await APIService.editStatus(bookId, newStatus);
-        button.setAttribute('data-current-status', newStatus);
-
-        // Update the button icon based on the new status
-        if (newStatus === 'read') {
-            button.innerHTML = '<i class="fa-solid fa-check"></i>';
-        } else if (newStatus === 'reading') {
-            button.innerHTML = '<i class="fa-solid fa-minus"></i>';
-        } else {
-            button.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    static async handleSubmit(event) {
+        event.preventDefault();
+        const formData = new URLSearchParams(new FormData(event.target));
+        const mode = document.getElementById('formModeInput').value;
+        const bookId = DOMElements.bookForm.dataset.bookId;
+        try {
+            const data = await APIService.submitEditBookForm(formData, mode, bookId);
+            if (data.message) {
+                UIUtils.closeModal(DOMElements.addEditBookModal);
+                UIUtils.updateTableWithBook(data["book"], mode);
+            } else {
+                console.warn(`Error in ${mode} mode:`, data.error);
+            }
+        } catch (error) {
+            console.error('An unexpected error occurred:', error);
         }
-    } catch (error) {
-        console.error('An unexpected error occurred while changing the book status:', error);
     }
-};
+
+    static async handleSubmitIsbnForm(event) {
+        event.preventDefault();
+        const isbnInput = document.getElementById('isbnForm-isbn');
+        const isbn = isbnInput.value.trim();
+
+        try {
+            const data = await APIService.fetchBookByISBN(isbn);
+            UIUtils.closeModal(DOMElements.isbnModal);
+            UIUtils.openModal(DOMElements.addEditBookModal);
+            DOMElements.bookForm.reset();
+            UIUtils.updateModalWithBookData(data);
+            document.getElementById('formModeInput').value = 'add';
+        } catch (error) {
+            console.error('An unexpected error occurred:', error);
+        }
+    }
+
+    static async handleDelete() {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) return;
+        try {
+            const bookId = DOMElements.deleteBookButton.dataset.bookId;
+            await APIService.deleteBook(bookId);
+
+            UIUtils.closeModal(DOMElements.viewBookModal);
+            UIUtils.updateTableWithBook({id: bookId}, 'delete');
+        } catch (error) {
+            console.error('An unexpected error occurred while deleting the book:', error);
+        }
+    }
+
+    static async handleChangeBookStatus(button) {
+        const row = button.closest('.book-row');
+        const bookId = row.getAttribute('data-book-id');
+        const currentStatus = button.getAttribute('data-current-status');
+
+        const determineNextStatus = (currentStatus) => {
+            switch (currentStatus) {
+                case 'not_read':
+                    return 'reading';
+                case 'reading':
+                    return 'read';
+                case 'read':
+                    return 'not_read';
+                default:
+                    return 'reading';
+            }
+        };
+        const newStatus = determineNextStatus(currentStatus);
+
+        try {
+            await APIService.editStatus(bookId, newStatus);
+            button.setAttribute('data-current-status', newStatus);
+            button.innerHTML = UIUtils.getStatusIcon(newStatus);
+        } catch (error) {
+            console.error('An unexpected error occurred while changing the book status:', error);
+        }
+    }
+}
 
 // Event listeners
 
@@ -342,14 +317,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Table Row Logic
     function initializeRowListeners() {
-        document.querySelectorAll('.book-row').forEach(row => {
-            row.addEventListener('click', () => handleRowClick(row));
-        });
+        document.querySelectorAll('.book-table tbody').forEach(tbody => {
+            tbody.addEventListener('click', (event) => {
+                const row = event.target.closest('.book-row');
+                if (row) {
+                    // Handle row click
+                    if (!event.target.closest('#bookStatusButton')) {
+                        EventHandlers.handleRowClick(row);
+                    }
+                }
 
-        document.querySelectorAll('.book-row button').forEach(button => {
-            button.addEventListener('click', (event) => {
-                event.stopPropagation(); // Prevent the status button from triggering a row click
-                handleChangeBookStatus(button);
+                const statusButton = event.target.closest('#bookStatusButton');
+                if (statusButton) {
+                    event.stopPropagation();
+                    EventHandlers.handleChangeBookStatus(statusButton);
+                }
             });
         });
     }
@@ -388,29 +370,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Form Logic
     function initializeFormListeners() {
-        DOMElements.bookForm.addEventListener('submit', handleSubmit);
-        DOMElements.isbnForm.addEventListener('submit', handleSubmitIsbnForm);
-        DOMElements.deleteBookButton.addEventListener('click', handleDelete);
+        DOMElements.bookForm.addEventListener('submit', EventHandlers.handleSubmit);
+        DOMElements.isbnForm.addEventListener('submit', EventHandlers.handleSubmitIsbnForm);
+        DOMElements.deleteBookButton.addEventListener('click', EventHandlers.handleDelete);
+        DOMElements.editBookButton.addEventListener('click', () => {
+            UIUtils.closeModal(DOMElements.viewBookModal);
+            UIUtils.openModal(DOMElements.addEditBookModal);
+            document.getElementById('formModeInput').value = 'edit';
+        });
     }
 
-    // Other
-
-    DOMElements.editBookButton.addEventListener('click', () => {
-        UIUtils.closeModal(DOMElements.viewBookModal);
-        UIUtils.openModal(DOMElements.addEditBookModal);
-        document.getElementById('formModeInput').value = 'edit';
-    });
-
-    // Initialize the book table
+    // Initialize book table
     const tbody = document.querySelector('.book-table tbody');
     const books = JSON.parse(document.getElementById('books-data').textContent);
 
     const rows = books.map(book => UIUtils.createBookRow(book, book.status));
-
-    // Sort rows
     rows.sort(UIUtils.sortCriterion);
-
-    // Clear and repopulate tbody
-    tbody.innerHTML = '';
     rows.forEach(row => tbody.appendChild(row));
 });
