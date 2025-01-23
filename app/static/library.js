@@ -422,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = document.querySelector('.book-table tbody');
     const books = JSON.parse(document.getElementById('books-data').textContent);
 
-    const rows = books.map(book => createBookRow(book));
+    const rows = books.map(book => createBookRow(book, book.status));
 
     // Sort rows
     rows.sort(sortCriterion());
