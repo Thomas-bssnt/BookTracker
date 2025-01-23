@@ -129,10 +129,14 @@ class UIUtils {
     static createBookRow(book, existingStatus = null) {
         const row = document.createElement('tr');
         row.classList.add('book-row');
-        row.dataset.bookId = book.id;
+
+        row.dataset.bookId = book["id"];
         row.dataset.authorLast = book["author_last"];
         row.dataset.authorFirst = book["author_first"];
-        row.dataset.year = book.year;
+        row.dataset.year = book["year"];
+        row.dataset.series = book["series"];
+        row.dataset.volume = book["volume"];
+        row.dataset.title = book["title"];
 
         const status = existingStatus || 'not_read';
         const statusIcon = this.getStatusIcon(status);
@@ -161,24 +165,15 @@ class UIUtils {
     }
 
     static sortCriterion(a, b) {
-        const getComparisonData = (row) => ({
-            lastName: row.dataset.authorLast,
-            firstName: row.dataset.authorFirst,
-            year: row.dataset.year || ''
-        });
-
-        const aData = getComparisonData(a);
-        const bData = getComparisonData(b);
-
-        if (aData.lastName.localeCompare(bData.lastName) !== 0) {
-            return aData.lastName.localeCompare(bData.lastName);
+        const keys = ["authorLast", "authorFirst", "year", "series", "volume", "title"];
+        for (const key of keys) {
+            const comparison = (a.dataset[key] || '').localeCompare(b.dataset[key] || '');
+            if (comparison !== 0) {
+                return comparison;
+            }
         }
-        if (aData.firstName.localeCompare(bData.firstName) !== 0) {
-            return aData.firstName.localeCompare(bData.firstName);
-        }
-        return aData.year.localeCompare(bData.year);
+        return 0;
     }
-
 
     static updateTableWithBook(book, mode = 'add') {
         const tbody = document.querySelector('.book-table tbody');
