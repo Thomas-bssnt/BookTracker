@@ -18,11 +18,27 @@ class DOMElements {
     // isbnModal
     static isbnModal = document.getElementById('isbnModal');
     static isbnForm = document.getElementById('isbnForm');
+    // barcodeModal
+    static barcodeModal = document.getElementById('barcodeModal');
+    static scannerContainer = document.getElementById('scanner-container');
     // addBookDropdown
     static addBookDropdown = document.getElementById("addBookDropdown");
     static addBookButton = document.getElementById('addBookButton');
     static manualAddButton = document.getElementById('manualAddButton');
     static isbnAddButton = document.getElementById('isbnAddButton');
+    static barcodeAddButton = document.getElementById('barcodeAddButton');
+}
+
+class LibraryLoader {
+    static loadScript(url) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
 }
 
 class APIService {
@@ -86,6 +102,10 @@ class UIUtils {
 
     static closeModal(element) {
         element.classList.remove('show');
+
+        if (element === DOMElements.barcodeModal) {
+            ScannerService.stopScanner();
+        }
     }
 
     static toggleModal(element) {
@@ -181,6 +201,135 @@ class UIUtils {
             rows.forEach(row => tbody.appendChild(row));
         } else if (mode === 'delete' && existingRow) {
             existingRow.remove();
+        }
+    }
+}
+
+class ScannerService {
+    static isScanning = false;
+    static isLibraryLoaded = false;
+    static lastResult = null;
+    static scannerConfig = {
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: null,
+            constraints: {
+                width: {min: 640},
+                height: {min: 480},
+                facingMode: "environment",
+                aspectRatio: {min: 1, max: 2}
+            }
+        },
+        locator: {patchSize: "medium", halfSample: true},
+        numOfWorkers: 2,
+        frequency: 10,
+        decoder: {readers: ["ean_reader", "ean_8_reader"]},
+        locate: true
+    };
+
+    static async ensureLibraryLoaded() {
+        if (this.isLibraryLoaded) return;
+
+        try {
+            await LibraryLoader.loadScript('https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js');
+            this.isLibraryLoaded = true;
+        } catch (error) {
+            console.error('Failed to load Quagga library:', error);
+            throw new Error('Failed to load barcode scanner library.');
+        }
+    }
+
+    static async requestCameraPermission() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({video: true});
+            stream.getTracks().forEach(track => track.stop());
+            return true;
+        } catch (err) {
+            console.error("Camera permission denied:", err);
+            alert("Camera access is required for scanning barcodes.");
+            return false;
+        }
+    }
+
+    static async initializeScanner() {
+        this.scannerConfig.inputStream.target = DOMElements.scannerContainer;
+
+        return new Promise((resolve, reject) => {
+            Quagga.init(this.scannerConfig, async (err) => {
+                if (err) {
+                    return reject(err);
+                }
+
+                Quagga.onProcessed((result) => {
+                    this._handleProcessed(result)
+                });
+
+                Quagga.onDetected((result) => {
+                    const code = result.codeResult.code;
+                    this._handleSuccessfulScan(code);
+                });
+
+                Quagga.start();
+                this.isScanning = true;
+                resolve();
+            });
+        });
+    }
+
+    static stopScanner() {
+        if (this.isScanning) {
+            Quagga.stop();
+            this.isScanning = false;
+            this.lastResult = null;
+            document.getElementById('deviceSelection')?.remove();
+        }
+    }
+
+    static _handleProcessed(result) {
+        const drawingCtx = Quagga.canvas.ctx.overlay;
+        const drawingCanvas = Quagga.canvas.dom.overlay;
+
+        if (!result) {
+            return;
+        }
+
+        drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+
+        if (result.boxes) {
+            result.boxes
+                .filter(box => box !== result.box)
+                .forEach(box => {
+                    Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
+                });
+        }
+
+        if (result.box) {
+            Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "blue", lineWidth: 2});
+        }
+
+        if (result.codeResult && result.codeResult.code) {
+            Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
+        }
+    }
+
+
+    static async _handleSuccessfulScan(isbn) {
+        if (this.lastResult === isbn) {
+            return;
+        }
+        this.lastResult = isbn;
+
+        try {
+            const data = await APIService.fetchBookByISBN(isbn);
+            this.stopScanner();
+            UIUtils.closeModal(DOMElements.barcodeModal);
+            UIUtils.updateModalWithBookData(data["book"]);
+            UIUtils.openModal(DOMElements.addEditBookModal);
+            document.getElementById('formModeInput').value = 'add';
+        } catch (error) {
+            console.error('ISBN lookup failed::', error);
+            this.lastResult = null;
         }
     }
 }
@@ -314,6 +463,27 @@ document.addEventListener('DOMContentLoaded', () => {
             UIUtils.closeModal(DOMElements.addBookDropdown);
             UIUtils.openModal(DOMElements.isbnModal);
         });
+
+        DOMElements.barcodeAddButton.addEventListener('click', async () => {
+            UIUtils.closeModal(DOMElements.addBookDropdown);
+            UIUtils.openModal(DOMElements.barcodeModal);
+
+            try {
+                await ScannerService.ensureLibraryLoaded();
+            } catch (error) {
+                throw new Error('Scanner initialization failed: Unable to load required library');
+            }
+
+            const hasPermission = await ScannerService.requestCameraPermission();
+            if (hasPermission) {
+                try {
+                    await ScannerService.initializeScanner();
+                } catch (error) {
+                    console.error('Failed to initialize scanner:', error);
+                    UIUtils.closeModal(DOMElements.barcodeModal);
+                }
+            }
+        });
     }
 
     // Table Row Logic
@@ -388,4 +558,5 @@ document.addEventListener('DOMContentLoaded', () => {
     const rows = books.map(book => UIUtils.createBookRow(book, book.status));
     rows.sort(UIUtils.sortCriterion);
     rows.forEach(row => tbody.appendChild(row));
+
 });

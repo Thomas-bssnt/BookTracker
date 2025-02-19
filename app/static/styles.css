@@ -283,3 +283,24 @@ tr:nth-child(even) {
 .modal.show {
     display: block;
 }
+
+/* Scanner */
+
+#barcodeModal .modal-content {
+    max-width: 800px;
+}
+
+#scanner-container {
+    width: 640px;
+    height: 480px;
+}
+
+#scanner-container canvas, video {
+    /*float: left;*/
+    width: 640px;
+    height: 480px;
+}
+
+#scanner-container canvas.drawingBuffer, video.drawingBuffer {
+    margin-left: -640px;
+}
