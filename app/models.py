@@ -395,6 +395,20 @@ class Book:
                 else:
                     year = None
 
+                language_iso_639_1 = book_info.get("language", None)
+                iso_639_1_to_french = {
+                    "en": "Anglais",
+                    "es": "Espagnol",
+                    "fr": "Français",
+                    "de": "Allemand",
+                    "it": "Italien",
+                    "nl": "Néerlandais",
+                    "pt": "Portugais",
+                }
+                language = iso_639_1_to_french.get(
+                    language_iso_639_1, language_iso_639_1
+                )
+
                 industry_identifiers = book_info.get("industryIdentifiers", [])
                 for identifier in industry_identifiers:
                     if identifier["type"] == "ISBN_13":
@@ -410,7 +424,7 @@ class Book:
                     series=None,
                     volume=None,
                     year=year,
-                    language=book_info.get("language", None),
+                    language=language,
                     genre=None,
                     written_form=None,
                     publisher=book_info.get("publisher", None),
