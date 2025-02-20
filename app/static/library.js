@@ -15,6 +15,8 @@ class DOMElements {
     // addEditBookModal
     static addEditBookModal = document.getElementById('addEditBookModal');
     static bookForm = document.getElementById('bookForm');
+    static seriesInput = document.getElementById("formMode-series");
+    static volumeInput = document.getElementById("formMode-volume");
     // isbnModal
     static isbnModal = document.getElementById('isbnModal');
     static isbnForm = document.getElementById('isbnForm');
@@ -558,5 +560,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const rows = books.map(book => UIUtils.createBookRow(book, book.status));
     rows.sort(UIUtils.sortCriterion);
     rows.forEach(row => tbody.appendChild(row));
+
+    //
+    function toggleVolumeRequirement() {
+        if (DOMElements.seriesInput.value.trim() !== "") {
+            DOMElements.volumeInput.setAttribute("required", "required");
+        } else {
+            DOMElements.volumeInput.removeAttribute("required");
+        }
+    }
+
+    DOMElements.seriesInput.addEventListener("input", toggleVolumeRequirement);
 
 });
