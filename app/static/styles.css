@@ -102,7 +102,6 @@ main {
     padding: 50px 30px;
     background-color: var(--color-primary);
     color: var(--color-text-white);
-    height: 1000vh;
 }
 
 .header-container {
