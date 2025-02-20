@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from flask import current_app as app, jsonify, Response
+from flask import Response, current_app, jsonify
 from flask import render_template, request
 
 from .models import Book
@@ -9,8 +9,8 @@ from .models import Book
 # View Routes
 
 
-@app.route("/", methods=["GET"])
-@app.route("/index", methods=["GET"])
+@current_app.route("/", methods=["GET"])
+@current_app.route("/index", methods=["GET"])
 def index() -> str:
     """Render the main library page."""
     try:
@@ -20,7 +20,7 @@ def index() -> str:
         raise RuntimeError(f"Failed to fetch books: {e}")
 
 
-@app.route("/stats", methods=["GET"])
+@current_app.route("/stats", methods=["GET"])
 def stats() -> str:
     """Render the statistics page."""
     return render_template("stats.html")
@@ -62,7 +62,7 @@ def make_response(status, data=None, message=None, code=None):
     return jsonify(response)
 
 
-@app.route("/api/books", methods=["POST"])
+@current_app.route("/api/books", methods=["POST"])
 def create_book() -> Response:
     """Create a new book."""
     try:
@@ -82,7 +82,7 @@ def create_book() -> Response:
         )
 
 
-@app.route("/api/books", methods=["GET"])
+@current_app.route("/api/books", methods=["GET"])
 def read_books() -> Response:
     """Get all books."""
     try:
@@ -100,7 +100,7 @@ def read_books() -> Response:
         )
 
 
-@app.route("/api/books/<book_id>", methods=["GET"])
+@current_app.route("/api/books/<book_id>", methods=["GET"])
 def read_book(book_id) -> Response:
     """Get a book by ID."""
     try:
@@ -119,7 +119,7 @@ def read_book(book_id) -> Response:
         )
 
 
-@app.route("/api/books/isbn/<isbn>", methods=["GET"])
+@current_app.route("/api/books/isbn/<isbn>", methods=["GET"])
 def get_book_by_isbn(isbn) -> Response:
     """Fetch book details using an ISBN."""
 
@@ -145,7 +145,7 @@ def get_book_by_isbn(isbn) -> Response:
         )
 
 
-@app.route("/api/books/<book_id>", methods=["PUT"])
+@current_app.route("/api/books/<book_id>", methods=["PUT"])
 def update_book(book_id) -> Response:
     """Update an existing book."""
     try:
@@ -167,7 +167,7 @@ def update_book(book_id) -> Response:
         )
 
 
-@app.route("/api/books/<book_id>", methods=["DELETE"])
+@current_app.route("/api/books/<book_id>", methods=["DELETE"])
 def delete_book(book_id) -> Response:
     """Delete a book by ID."""
     try:
@@ -184,7 +184,7 @@ def delete_book(book_id) -> Response:
         )
 
 
-@app.route("/api/books/<book_id>/status", methods=["PATCH"])
+@current_app.route("/api/books/<book_id>/status", methods=["PATCH"])
 def update_book_status(book_id) -> Response:
     """Update a book's status."""
     status = request.form.get("status")

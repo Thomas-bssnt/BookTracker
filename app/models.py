@@ -1,12 +1,11 @@
+import sqlite3
 from csv import reader
 from dataclasses import asdict, dataclass, fields
-from typing import Optional, Self
 from pathlib import Path
+from typing import Optional, Self
 
 import requests
-
 from wtforms import Form, IntegerField, StringField, validators
-import sqlite3
 
 DATABASE_PATH = Path("BookTracker.db")
 SCHEMA_PATH = Path("./app/schema.sql")
